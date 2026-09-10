@@ -49,11 +49,13 @@ export default function Home() {
   return (
     <>
       <header className="hero">
+        <div className="heroGlow" aria-hidden="true"></div>
+        <div className="heroGrid" aria-hidden="true"></div>
         <div className="hero-in">
-          <div className="eyebrow">{hero.eyebrow}</div>
-          <h1>{hero.title}</h1>
-          <p>{hero.text}</p>
-          <div className="actions">
+          <div className="eyebrow reveal">{hero.eyebrow}</div>
+          <h1 className="reveal" style={{ "--reveal-delay": "80ms" }}>{hero.title}</h1>
+          <p className="reveal" style={{ "--reveal-delay": "160ms" }}>{hero.text}</p>
+          <div className="actions reveal" style={{ "--reveal-delay": "240ms" }}>
             <Link className="btn" to="/section/research-areas">Explore Research →</Link>
             <Link className="btn outline" to="/section/data">Explore Data</Link>
             <Link className="btn outline" to="/partner">Partner With SOSARI</Link>
