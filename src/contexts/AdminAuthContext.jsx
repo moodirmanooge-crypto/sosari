@@ -1,56 +1,73 @@
 import { createContext, useContext, useEffect, useState } from "react";
+import { onAuthStateChanged, signOut, signInWithEmailAndPassword } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
-import { db } from "../firebase";
+import { auth, db } from "../firebase";
 
 const AdminAuthContext = createContext(null);
 
-// Session is kept in sessionStorage only (cleared when the tab closes).
-// This avoids re-reading Firestore on every page refresh.
-const SESSION_KEY = "sosari_admin_session";
-
 export function AdminAuthProvider({ children }) {
+  const [user, setUser] = useState(null);
   const [adminProfile, setAdminProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Restore session on first load.
+  // Real Firebase Auth session drives everything. As soon as Firebase
+  // confirms who's signed in, we cross-check them against the one admin
+  // doc (sosariAdmin/admin) by email, purely to load the display name/role.
   useEffect(() => {
-    try {
-      const raw = sessionStorage.getItem(SESSION_KEY);
-      if (raw) setAdminProfile(JSON.parse(raw));
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
+    const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (!firebaseUser || !firebaseUser.email) {
+        setUser(null);
+        setAdminProfile(null);
+        setLoading(false);
+        return;
+      }
+      try {
+        const ref = doc(db, "sosariAdmin", "admin");
+        const snap = await getDoc(ref);
+        if (snap.exists() && snap.data().email === firebaseUser.email) {
+          setUser(firebaseUser);
+          setAdminProfile({ username: snap.data().username, role: snap.data().role || "admin" });
+        } else {
+          // Signed in to Firebase Auth but not the registered admin — kick them out.
+          await signOut(auth);
+          setUser(null);
+          setAdminProfile(null);
+        }
+      } catch (e) {
+        console.error(e);
+        setUser(null);
+        setAdminProfile(null);
+      } finally {
+        setLoading(false);
+      }
+    });
+    return unsub;
   }, []);
 
-  // Login flow: read the single admin doc directly from Firestore
-  // (sosariAdmin/admin) and compare username + password against it.
+  // Login flow: the admin types a USERNAME (not an email). We look the
+  // username up in sosariAdmin/admin to find the linked email, then
+  // authenticate for real against Firebase Authentication with that
+  // email + the password the admin typed. The password itself is never
+  // stored in or checked against Firestore — Firebase Auth owns it.
   async function loginWithUsername(username, password) {
     const ref = doc(db, "sosariAdmin", "admin");
     const snap = await getDoc(ref);
-    if (!snap.exists()) {
-      throw new Error("Admin-ka lama helin. La xiriir maamulaha.");
+    if (!snap.exists() || snap.data().username !== username.trim()) {
+      throw new Error("Username-kan lama helin. Fadlan hubi username-ka.");
     }
-    const data = snap.data();
-    if (data.username !== username.trim() || String(data.password) !== password) {
-      throw new Error("Username-ka ama password-ka waa khalad. Fadlan isku day mar kale.");
+    const email = snap.data().email;
+    if (!email) {
+      throw new Error("Admin-kan email lama xirin. La xiriir maamulaha.");
     }
-    const profile = { username: data.username, role: data.role || "admin" };
-    setAdminProfile(profile);
-    sessionStorage.setItem(SESSION_KEY, JSON.stringify(profile));
-    return profile;
+    await signInWithEmailAndPassword(auth, email, password);
   }
 
-  function logout() {
-    setAdminProfile(null);
-    sessionStorage.removeItem(SESSION_KEY);
+  async function logout() {
+    await signOut(auth);
   }
 
   return (
-    <AdminAuthContext.Provider
-      value={{ user: adminProfile, adminProfile, loading, loginWithUsername, logout }}
-    >
+    <AdminAuthContext.Provider value={{ user, adminProfile, loading, loginWithUsername, logout }}>
       {children}
     </AdminAuthContext.Provider>
   );
