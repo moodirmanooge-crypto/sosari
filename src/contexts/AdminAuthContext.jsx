@@ -1,73 +1,56 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import { onAuthStateChanged, signOut, signInWithEmailAndPassword } from "firebase/auth";
-import { doc, getDoc, collection, query, where, getDocs, limit } from "firebase/firestore";
-import { auth, db } from "../firebase";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "../firebase";
 
 const AdminAuthContext = createContext(null);
 
+// Session is kept in sessionStorage only (cleared when the tab closes).
+// This avoids re-reading Firestore on every page refresh.
+const SESSION_KEY = "sosari_admin_session";
+
 export function AdminAuthProvider({ children }) {
-  const [user, setUser] = useState(null);
   const [adminProfile, setAdminProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Restore session on first load.
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (!firebaseUser || !firebaseUser.email) {
-        setUser(null);
-        setAdminProfile(null);
-        setLoading(false);
-        return;
-      }
-      try {
-        const ref = doc(db, "SosarAdmin", firebaseUser.email);
-        const snap = await getDoc(ref);
-        if (snap.exists()) {
-          setUser(firebaseUser);
-          setAdminProfile({ id: snap.id, ...snap.data() });
-        } else {
-          // Not an authorized admin — sign them back out.
-          await signOut(auth);
-          setUser(null);
-          setAdminProfile(null);
-        }
-      } catch (e) {
-        console.error(e);
-        setUser(null);
-        setAdminProfile(null);
-      } finally {
-        setLoading(false);
-      }
-    });
-    return unsub;
+    try {
+      const raw = sessionStorage.getItem(SESSION_KEY);
+      if (raw) setAdminProfile(JSON.parse(raw));
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  // Login flow: the admin types a USERNAME (not an email). We look the
-  // username up in the "SosarAdmin" collection to find the linked email,
-  // then authenticate securely against Firebase Authentication using
-  // that email + the password the admin typed.
+  // Login flow: read the single admin doc directly from Firestore
+  // (sosariAdmin/admin) and compare username + password against it.
   async function loginWithUsername(username, password) {
-    const q = query(
-      collection(db, "SosarAdmin"),
-      where("username", "==", username.trim()),
-      limit(1)
-    );
-    const snap = await getDocs(q);
-    if (snap.empty) {
-      throw new Error("Username-kan lama helin. Fadlan hubi username-ka.");
+    const ref = doc(db, "sosariAdmin", "admin");
+    const snap = await getDoc(ref);
+    if (!snap.exists()) {
+      throw new Error("Admin-ka lama helin. La xiriir maamulaha.");
     }
-    const adminDoc = snap.docs[0].data();
-    if (!adminDoc.email) {
-      throw new Error("Admin-kan email lama xirin. La xiriir maamulaha.");
+    const data = snap.data();
+    if (data.username !== username.trim() || String(data.password) !== password) {
+      throw new Error("Username-ka ama password-ka waa khalad. Fadlan isku day mar kale.");
     }
-    await signInWithEmailAndPassword(auth, adminDoc.email, password);
+    const profile = { username: data.username, role: data.role || "admin" };
+    setAdminProfile(profile);
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify(profile));
+    return profile;
   }
 
-  async function logout() {
-    await signOut(auth);
+  function logout() {
+    setAdminProfile(null);
+    sessionStorage.removeItem(SESSION_KEY);
   }
 
   return (
-    <AdminAuthContext.Provider value={{ user, adminProfile, loading, loginWithUsername, logout }}>
+    <AdminAuthContext.Provider
+      value={{ user: adminProfile, adminProfile, loading, loginWithUsername, logout }}
+    >
       {children}
     </AdminAuthContext.Provider>
   );
