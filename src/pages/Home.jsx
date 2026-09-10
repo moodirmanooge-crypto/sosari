@@ -49,14 +49,12 @@ export default function Home() {
   return (
     <>
       <header className="hero">
-        <div className="heroGlow" aria-hidden="true"></div>
-        <div className="heroGrid" aria-hidden="true"></div>
         <div className="hero-in">
-          <div className="eyebrow reveal">{hero.eyebrow}</div>
-          <h1 className="reveal" style={{ "--reveal-delay": "80ms" }}>{hero.title}</h1>
-          <p className="reveal" style={{ "--reveal-delay": "160ms" }}>{hero.text}</p>
-          <div className="actions reveal" style={{ "--reveal-delay": "240ms" }}>
-            <Link className="btn" to="/section/research-areas">Explore Research →</Link>
+          <div className="eyebrow">{hero.eyebrow}</div>
+          <h1>{hero.title}</h1>
+          <p>{hero.text}</p>
+          <div className="actions">
+            <Link className="btn" to="/section/research">Explore Research →</Link>
             <Link className="btn outline" to="/section/data">Explore Data</Link>
             <Link className="btn outline" to="/partner">Partner With SOSARI</Link>
           </div>
@@ -86,7 +84,7 @@ export default function Home() {
               <div className="num">01 / RESEARCH</div>
               <h3>Research & Evidence</h3>
               <p>Applied and policy research designed around Somalia's priority questions and real-world decisions.</p>
-              <Link className="link" to="/section/research-areas">Research agenda →</Link>
+              <Link className="link" to="/section/research">Research agenda →</Link>
             </div>
             <div className="card">
               <div className="num">02 / DATA</div>
@@ -120,11 +118,11 @@ export default function Home() {
             that informs decision-making, policy development, and programme design.
           </p>
           <div className="themes">
-            <div className="theme"><b>Human Development</b><p>Health • Nutrition • Education</p></div>
-            <div className="theme"><b>Social Protection & Community Resilience</b><p>Protection • Livelihoods • Community Resilience</p></div>
-            <div className="theme"><b>Environment & Natural Resources</b><p>WASH • Climate Change • Natural Resource Management</p></div>
-            <div className="theme"><b>Governance & Policy Systems</b><p>Governance • Public Policy • Institutional Development</p></div>
-            <div className="theme"><b>Economic Development</b><p>Private Sector • Enterprise & Markets • Employment</p></div>
+            <div className="theme"><b>Human Development</b><p>Health • Nutrition • Education • Population • Gender & Youth</p></div>
+            <div className="theme"><b>Social Protection & Community Resilience</b><p>Protection Systems • Livelihoods • Displacement • Peacebuilding</p></div>
+            <div className="theme"><b>Environment & Natural Resources</b><p>WASH • Climate Adaptation • Natural Resource Management</p></div>
+            <div className="theme"><b>Governance & Public Policy</b><p>Institutions • Service Delivery • Accountability • Rule of Law</p></div>
+            <div className="theme"><b>Economic Development</b><p>Private Sector • Enterprise • Markets • Employment</p></div>
           </div>
         </div>
       </section>
