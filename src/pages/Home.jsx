@@ -5,6 +5,15 @@ import { db } from "../firebase";
 import { fetchFeaturedHome } from "../utils/content";
 import ContentCard from "../components/ContentCard";
 import Loader from "../components/Loader";
+import { IconChart, IconUsers, IconDoc, IconBulb, IconDb, IconGlobe } from "../components/Icons";
+
+// Splits "...in Somalia." off the end of the headline so it can be
+// rendered in the accent (teal) color, like the SOSARI brand hero.
+function splitHeroTitle(title) {
+  const match = title.match(/(.*?)(\bin\s+Somalia\.?\s*)$/i);
+  if (!match) return { lead: title, accent: "" };
+  return { lead: match[1], accent: match[2] };
+}
 
 const DEFAULT_HERO = {
   eyebrow: "Evidence • Data • Policy • Impact",
@@ -46,18 +55,85 @@ export default function Home() {
     return () => { mounted = false; };
   }, []);
 
+  const { lead, accent } = splitHeroTitle(hero.title);
+
   return (
     <>
-      <header className="hero">
-        <div className="hero-in">
-          <div className="eyebrow">{hero.eyebrow}</div>
-          <h1>{hero.title}</h1>
-          <p>{hero.text}</p>
-          <div className="actions">
-            <Link className="btn" to="/section/research">Explore Research →</Link>
-            <Link className="btn outline" to="/section/data">Explore Data</Link>
-            <Link className="btn outline" to="/partner">Partner With SOSARI</Link>
+      <header className="hero heroV2">
+        <div className="heroV2-in">
+          <div className="heroV2-left">
+            <div className="pillBadge"><IconChart /> {hero.eyebrow}</div>
+            <h1>
+              {lead}
+              {accent && <span className="accent">{accent}</span>}
+            </h1>
+            <p>{hero.text}</p>
+            <div className="actions">
+              <Link className="btn primary" to="/section/research">Explore Research →</Link>
+              <Link className="btn outline" to="/section/data"><IconChart /> Explore Data</Link>
+              <Link className="btn outline" to="/partner"><IconUsers /> Partner With SOSARI</Link>
+            </div>
           </div>
+
+          <div className="heroV2-right">
+            <div className="dotGrid" aria-hidden="true" />
+            <div className="somaliaWrap" aria-hidden="true">
+              <svg viewBox="0 0 300 420" className="somaliaSvg">
+                <defs>
+                  <clipPath id="somaliaClip">
+                    <path d="M120 10 L165 20 L185 55 L215 60 L235 95 L255 150 L270 215 L258 260 L235 300 L215 340 L195 380 L170 405 L150 400 L145 360 L125 330 L100 320 L95 280 L75 250 L60 205 L55 160 L65 115 L85 70 L100 35 Z" />
+                  </clipPath>
+                </defs>
+                <g clipPath="url(#somaliaClip)">
+                  <rect x="0" y="0" width="300" height="150" fill="#0d3a52" />
+                  <rect x="0" y="0" width="300" height="150" fill="url(#cityGrad)" />
+                  <rect x="0" y="150" width="300" height="150" fill="url(#saharaGrad)" />
+                  <rect x="0" y="300" width="300" height="120" fill="url(#marketGrad)" />
+                  <circle cx="230" cy="40" r="70" fill="#ffffff" opacity="0.06" />
+                </g>
+                <defs>
+                  <linearGradient id="cityGrad" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stopColor="#0a4163" />
+                    <stop offset="100%" stopColor="#0c5a78" />
+                  </linearGradient>
+                  <linearGradient id="saharaGrad" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stopColor="#8a7237" />
+                    <stop offset="100%" stopColor="#b89a52" />
+                  </linearGradient>
+                  <linearGradient id="marketGrad" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stopColor="#0c4a4a" />
+                    <stop offset="100%" stopColor="#0a3a3a" />
+                  </linearGradient>
+                </defs>
+                <path d="M120 10 L165 20 L185 55 L215 60 L235 95 L255 150 L270 215 L258 260 L235 300 L215 340 L195 380 L170 405 L150 400 L145 360 L125 330 L100 320 L95 280 L75 250 L60 205 L55 160 L65 115 L85 70 L100 35 Z"
+                  fill="none" stroke="#7fe0d6" strokeWidth="2" opacity="0.85" />
+              </svg>
+              <div className="somaliaCaption">STRONGER DATA<br />BRIGHTER SOMALIA</div>
+            </div>
+
+            <div className="floatCard floatCardTop">
+              <div className="floatIcon"><IconChart /></div>
+              <div className="floatText">Data Today<br />A Stronger Tomorrow</div>
+              <Link to="/section/data" className="floatArrowBtn" aria-label="Explore data">→</Link>
+            </div>
+
+            <div className="floatCard floatCardList">
+              <div className="floatItem"><IconDoc /> Research Insights</div>
+              <div className="floatItem"><IconChart /> Reliable Statistics</div>
+              <div className="floatItem"><IconBulb /> Policy Solutions</div>
+              <div className="floatItem"><IconUsers /> Real Impact</div>
+            </div>
+
+            <div className="cursiveTag">Somalia Forward<br />with Evidence</div>
+          </div>
+        </div>
+
+        <div className="statsBar">
+          <div className="statItem"><IconDoc /><div><b>150+</b><span>Research Publications</span></div></div>
+          <div className="statItem"><IconDb /><div><b>30+</b><span>Datasets & Tools</span></div></div>
+          <div className="statItem"><IconUsers /><div><b>20+</b><span>Policy Partnerships</span></div></div>
+          <div className="statItem"><IconGlobe /><div><b>1</b><span>Region, Greater Impact</span></div></div>
+          <div className="statItem tagline">Evidence for<br />People and Progress</div>
         </div>
       </header>
 

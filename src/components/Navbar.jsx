@@ -1,12 +1,15 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { NAV } from "../config/navigation";
 import logo from "../assets/logo.png";
+import { IconSearch, IconChart, IconUsers } from "./Icons";
 
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openKey, setOpenKey] = useState(null);
   const navigate = useNavigate();
+  const location = useLocation();
+  const isHome = location.pathname === "/";
 
   function goto(key) {
     setMobileOpen(false);
@@ -27,6 +30,10 @@ export default function Navbar() {
         </Link>
 
         <div className="menu">
+          <div className="mi">
+            <Link to="/" className={isHome ? "navActive" : ""}>Home</Link>
+          </div>
+
           {NAV.map((group) => (
             <div className="mi" key={group.key}>
               <a href={`/section/${group.key}`} onClick={(e) => { e.preventDefault(); goto(group.key); }}>
@@ -54,7 +61,13 @@ export default function Navbar() {
               )}
             </div>
           ))}
-          <Link className="cta" to="/partner">PARTNER WITH SOSARI</Link>
+
+          <button className="searchBtn" aria-label="Search" type="button" title="Search">
+            <IconSearch />
+          </button>
+          <Link className="cta" to="/partner">
+            PARTNER WITH SOSARI <span className="ctaArrow">→</span>
+          </Link>
         </div>
 
         <div className="mobile" onClick={() => setMobileOpen((v) => !v)}>☰</div>
@@ -62,6 +75,9 @@ export default function Navbar() {
 
       {mobileOpen && (
         <div className="mobileMenu">
+          <Link to="/" className="mobileOverview" onClick={() => setMobileOpen(false)}>
+            Home
+          </Link>
           {NAV.map((group) => (
             <div key={group.key} className="mobileGroup">
               <button className="mobileGroupLabel" onClick={() => setOpenKey(openKey === group.key ? null : group.key)}>

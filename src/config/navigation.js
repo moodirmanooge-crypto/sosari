@@ -12,7 +12,7 @@
 
 export const NAV = [
   {
-    label: "ABOUT",
+    label: "About",
     key: "about",
     cap: "Institution",
     items: [
@@ -26,7 +26,7 @@ export const NAV = [
     ],
   },
   {
-    label: "RESEARCH",
+    label: "Research",
     key: "research",
     groups: [
       {
@@ -86,7 +86,7 @@ export const NAV = [
     ],
   },
   {
-    label: "DATA & STATISTICS",
+    label: "Data & Statistics",
     key: "data",
     cap: "Statistics & Analytics",
     items: [
@@ -97,7 +97,7 @@ export const NAV = [
     ],
   },
   {
-    label: "POLICY & ADVISORY",
+    label: "Policy & Advisory",
     key: "policies",
     cap: "Evidence to decisions",
     items: [
@@ -110,7 +110,7 @@ export const NAV = [
     ],
   },
   {
-    label: "EVALUATIONS",
+    label: "Evaluations",
     key: "evaluations",
     cap: "Measurement, evaluation & learning",
     items: [
@@ -123,7 +123,7 @@ export const NAV = [
     ],
   },
   {
-    label: "KNOWLEDGE",
+    label: "Knowledge",
     key: "knowledge",
     cap: "Evidence & Knowledge",
     items: [
@@ -137,7 +137,7 @@ export const NAV = [
     ],
   },
   {
-    label: "DIALOGUE",
+    label: "Dialogue",
     key: "dialogue",
     cap: "Convening & Dialogue",
     items: [
