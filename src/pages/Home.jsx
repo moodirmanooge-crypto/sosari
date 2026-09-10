@@ -81,7 +81,7 @@ export default function Home() {
               <svg viewBox="0 0 300 420" className="somaliaSvg">
                 <defs>
                   <clipPath id="somaliaClip">
-                    <path d="M120 10 L165 20 L185 55 L215 60 L235 95 L255 150 L270 215 L258 260 L235 300 L215 340 L195 380 L170 405 L150 400 L145 360 L125 330 L100 320 L95 280 L75 250 L60 205 L55 160 L65 115 L85 70 L100 35 Z" />
+                    <path d="M68 20 L95 35 L130 25 L165 30 L200 15 L230 20 L250 18 L282 8 L268 50 L250 90 L238 125 L222 160 L205 195 L185 230 L160 260 L130 290 L108 305 L85 320 L55 340 L28 370 L18 395 L6 360 L20 330 L4 300 L22 270 L8 235 L28 205 L14 170 L34 140 L20 105 L40 75 L26 45 Z" />
                   </clipPath>
                 </defs>
                 <g clipPath="url(#somaliaClip)">
@@ -105,7 +105,7 @@ export default function Home() {
                     <stop offset="100%" stopColor="#0a3a3a" />
                   </linearGradient>
                 </defs>
-                <path d="M120 10 L165 20 L185 55 L215 60 L235 95 L255 150 L270 215 L258 260 L235 300 L215 340 L195 380 L170 405 L150 400 L145 360 L125 330 L100 320 L95 280 L75 250 L60 205 L55 160 L65 115 L85 70 L100 35 Z"
+                <path d="M68 20 L95 35 L130 25 L165 30 L200 15 L230 20 L250 18 L282 8 L268 50 L250 90 L238 125 L222 160 L205 195 L185 230 L160 260 L130 290 L108 305 L85 320 L55 340 L28 370 L18 395 L6 360 L20 330 L4 300 L22 270 L8 235 L28 205 L14 170 L34 140 L20 105 L40 75 L26 45 Z"
                   fill="none" stroke="#7fe0d6" strokeWidth="2" opacity="0.85" />
               </svg>
               <div className="somaliaCaption">STRONGER DATA<br />BRIGHTER SOMALIA</div>
