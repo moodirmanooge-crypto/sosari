@@ -3,7 +3,11 @@ import { Link, useParams } from "react-router-dom";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase";
 import { SECTION_INDEX } from "../config/navigation";
+import { SECTION_META, DEFAULT_SECTION_META } from "../config/sectionMeta";
+import { TextReveal, ImageReveal, BlobBg } from "../components/Motion";
 import Loader from "../components/Loader";
+import Reveal from "../components/Reveal";
+import { IconHome, IconChevronRight } from "../components/Icons";
 import NotFound from "./NotFound";
 
 export default function ArticlePage() {
@@ -33,32 +37,40 @@ export default function ArticlePage() {
   if (notFound || !item) return <NotFound />;
 
   const meta = SECTION_INDEX[item.sectionKey];
+  const parentMeta = meta ? (SECTION_META[meta.parentKey] || DEFAULT_SECTION_META) : DEFAULT_SECTION_META;
 
   return (
     <article className="sectionPageWrap">
-      <header className="pageHero">
+      <header className="sectionHero" style={{ "--accent": parentMeta.accent }}>
+        <BlobBg />
         <div className="wrap">
           {meta && (
-            <div className="eyebrow">
-              <Link to={`/section/${item.sectionKey}`} style={{ color: "inherit" }}>
-                {meta.parentLabel} / {meta.label}
-              </Link>
-            </div>
+            <Reveal className="crumbs" as="nav" aria-label="Breadcrumb">
+              <Link to="/"><IconHome /> Home</Link>
+              <IconChevronRight className="crumbSep" />
+              <Link to={`/section/${meta.parentKey}`}>{meta.parentLabel}</Link>
+              <IconChevronRight className="crumbSep" />
+              <Link to={`/section/${item.sectionKey}`}>{meta.label}</Link>
+            </Reveal>
           )}
-          <h1>{item.title}</h1>
-          {item.summary && <p>{item.summary}</p>}
+          <TextReveal text={item.title} as="h1" delay={0.08} />
+          {item.summary && <Reveal delay={0.14} as="p">{item.summary}</Reveal>}
         </div>
       </header>
 
       <section>
         <div className="wrap articleBody">
           {item.imageUrl && (
-            <img src={item.imageUrl} alt={item.title} className="articleImg" />
+            <ImageReveal src={item.imageUrl} alt={item.title} className="articleImgWrap" />
           )}
-          {item.author && <p className="lead"><b>{item.author}</b>{item.date ? ` — ${item.date}` : ""}</p>}
-          <div className="articleText">
+          {item.author && (
+            <Reveal delay={0.05} as="p" className="lead">
+              <b>{item.author}</b>{item.date ? ` — ${item.date}` : ""}
+            </Reveal>
+          )}
+          <Reveal delay={0.1} className="articleText">
             {(item.body || "").split("\n").map((para, i) => para.trim() ? <p key={i}>{para}</p> : <br key={i} />)}
-          </div>
+          </Reveal>
         </div>
       </section>
     </article>
