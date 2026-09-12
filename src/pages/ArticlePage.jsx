@@ -36,8 +36,10 @@ export default function ArticlePage() {
   if (loading) return <Loader full />;
   if (notFound || !item) return <NotFound />;
 
-  const meta = SECTION_INDEX[item.sectionKey];
+  const sectionKey = (item.sectionKey || "").trim();
+  const meta = SECTION_INDEX[sectionKey];
   const parentMeta = meta ? (SECTION_META[meta.parentKey] || DEFAULT_SECTION_META) : DEFAULT_SECTION_META;
+  const sectionHref = meta ? `/section/${sectionKey}` : "/";
 
   return (
     <article className="sectionPageWrap">
@@ -50,7 +52,7 @@ export default function ArticlePage() {
               <IconChevronRight className="crumbSep" />
               <Link to={`/section/${meta.parentKey}`}>{meta.parentLabel}</Link>
               <IconChevronRight className="crumbSep" />
-              <Link to={`/section/${item.sectionKey}`}>{meta.label}</Link>
+              <Link to={sectionHref}>{meta.label}</Link>
             </Reveal>
           )}
           <TextReveal text={item.title} as="h1" delay={0.08} />
@@ -70,6 +72,27 @@ export default function ArticlePage() {
           )}
           <Reveal delay={0.1} className="articleText">
             {(item.body || "").split("\n").map((para, i) => para.trim() ? <p key={i}>{para}</p> : <br key={i} />)}
+          </Reveal>
+        </div>
+      </section>
+
+      <section>
+        <div className="wrap">
+          <Reveal className="articleCloserLinks">
+            <Link to={sectionHref} className="link">
+              ← Back to {meta ? meta.label : "Home"}
+            </Link>
+          </Reveal>
+          <Reveal delay={0.06} className="ctaBand">
+            <div>
+              <div className="eyebrow2">Keep exploring</div>
+              <h2>{meta ? `More in ${meta.label}` : "Explore SOSARI"}</h2>
+              <p>Browse related research, data and publications from SOSARI.</p>
+            </div>
+            <div className="actions">
+              <Link className="btn outline" to={sectionHref}>View all →</Link>
+              <Link className="btn" to="/partner">Partner With SOSARI →</Link>
+            </div>
           </Reveal>
         </div>
       </section>

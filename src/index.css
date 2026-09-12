@@ -255,6 +255,8 @@ h2{font-size:38px;line-height:1.1;letter-spacing:-.8px;margin:7px 0 12px}
 .contentCardImg.imageReveal{margin:-20px -20px 12px;height:150px}
 .articleImgWrap.imageReveal{border-radius:14px;margin-bottom:22px;height:360px}
 
+.articleCloserLinks{margin-bottom:22px}
+.articleCloserLinks .link{font-size:12px;margin-top:0}
 .ctaBand{background:linear-gradient(105deg,var(--navy),#0a5570);color:#fff;border-radius:18px;padding:38px 40px;display:flex;align-items:center;justify-content:space-between;gap:25px;flex-wrap:wrap}
 .ctaBand h2{margin:0;max-width:690px;color:#fff}
 .ctaBand p{font-size:11px;color:#bfd2de;max-width:650px}
