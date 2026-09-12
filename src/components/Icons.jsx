@@ -205,3 +205,31 @@ export function IconTelegram(props) {
     </svg>
   );
 }
+
+export function IconCheck(props) {
+  return (
+    <svg {...base} {...props}>
+      <polyline points="20 6 9 17 4 12" />
+    </svg>
+  );
+}
+
+export function IconHandshake(props) {
+  return (
+    <svg {...base} {...props}>
+      <path d="m11 12 2.5 2.5a1.5 1.5 0 0 0 2.12-2.12L13.5 10" />
+      <path d="m8.5 15 1.5 1.5a1.5 1.5 0 0 0 2.12-2.12" />
+      <path d="M2 10.5 6 6l4.5 1.5L13 5l4 2 5 3.5-3 3.5-3-2-4 4-2-1-3.5 3.5L2 14Z" />
+    </svg>
+  );
+}
+
+export function IconDownload(props) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M12 3v12" />
+      <polyline points="7 10 12 15 17 10" />
+      <path d="M4 19h16" />
+    </svg>
+  );
+}

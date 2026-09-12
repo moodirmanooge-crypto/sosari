@@ -33,6 +33,7 @@ button{font-family:inherit;cursor:pointer}
 .official-logo{display:block;width:255px;height:auto;max-height:68px;object-fit:contain;transition:max-height .25s ease}
 .navScrolled .official-logo{max-height:56px}
 .footer-logo{width:245px}
+.footerLogoBadge{display:inline-block;background:#fff;padding:14px 20px;border-radius:14px;box-shadow:0 10px 26px rgba(0,0,0,.25)}
 .menu{display:flex;align-items:center}
 .mi{position:relative}
 .mi>a{position:relative;display:block;padding:31px 10px;font-size:14px;font-weight:600;letter-spacing:0;cursor:pointer;color:var(--ink);transition:color .2s ease}
@@ -67,15 +68,58 @@ button{font-family:inherit;cursor:pointer}
 .cta:hover{transform:translateY(-2px);box-shadow:0 14px 30px rgba(8,110,173,.38);filter:brightness(1.05)}
 .mobile{display:none;font-size:24px;cursor:pointer}
 
-.mobileMenu{display:none}
 @media(max-width:1050px){
   .menu{display:none}
   .mobile{display:block}
-  .mobileMenu{display:flex;flex-direction:column;background:#fff;border-bottom:1px solid var(--line);padding:10px 4.8vw 20px}
-  .mobileMenu a{padding:14px 4px;font-size:13px;font-weight:700;color:var(--ink);border-bottom:1px solid var(--line)}
-  .mobileMenu a.navActive{color:var(--blue)}
-  .mobileCta{display:block;text-align:center;margin-top:14px;border-bottom:none!important}
 }
+
+/* ---------- Full-screen mobile menu ---------- */
+.mobileMenuOverlay{position:fixed;inset:0;z-index:300;background:#fff;overflow-y:auto;
+  padding:22px 20px 34px;display:flex;flex-direction:column;gap:16px;
+  background-image:radial-gradient(circle at 100% 0%,rgba(8,110,173,.06),transparent 45%),
+    radial-gradient(circle at 0% 100%,rgba(7,134,125,.06),transparent 45%)}
+.mobileMenuHeader{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.mobileMenuBrand{display:flex;flex-direction:column;gap:6px}
+.mobileMenuLogo{width:170px;height:auto}
+.mobileMenuTagline{font-size:10.5px;font-weight:800;letter-spacing:.3px;color:var(--muted)}
+.mobileMenuClose{flex:none;width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:#fff;
+  display:flex;align-items:center;justify-content:center;color:var(--ink)}
+.mobileMenuKicker{font-size:10px;font-weight:900;letter-spacing:1.6px;text-transform:uppercase;color:var(--muted);
+  padding-bottom:10px;border-bottom:1px solid var(--line)}
+
+.mobileMenuList{display:flex;flex-direction:column;gap:12px}
+.mobileMenuItem{display:flex;align-items:center;gap:14px;border-radius:16px;padding:14px 16px;
+  background:var(--mmBg,#f5f8fa);transition:transform .18s ease,box-shadow .18s ease}
+.mobileMenuItem:active{transform:scale(.98)}
+.mobileMenuItemHome{background:linear-gradient(120deg,var(--blue),var(--teal))}
+.mmIcon{flex:none;width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+  background:rgba(255,255,255,.7);color:var(--mmFg,var(--blue))}
+.mobileMenuItemHome .mmIcon{background:rgba(255,255,255,.22);color:#fff}
+.mmIcon svg{width:20px;height:20px}
+.mmText{flex:1;display:flex;flex-direction:column;gap:2px;min-width:0}
+.mmText b{font-size:15px;color:var(--ink)}
+.mobileMenuItemHome .mmText b{color:#fff}
+.mmText span{font-size:10.5px;color:var(--muted)}
+.mobileMenuItemHome .mmText span{color:rgba(255,255,255,.85)}
+.mmBtn{flex:none;display:inline-flex;align-items:center;gap:5px;background:var(--mmBg,#f5f8fa);color:var(--mmFg,var(--blue));
+  border:1px solid rgba(0,0,0,.06);border-radius:999px;padding:8px 13px;font-size:11px;font-weight:800;white-space:nowrap}
+.mmBtn svg{width:12px;height:12px}
+.mobileMenuItemHome .mmBtn{background:#fff;color:var(--blue)}
+
+.mobileMenuPartner{display:flex;align-items:center;gap:14px;border-radius:16px;padding:16px;margin-top:4px;
+  background:linear-gradient(120deg,var(--navy),#0a5570);color:#fff}
+.mmPartnerIcon{flex:none;width:46px;height:46px;border-radius:50%;background:rgba(255,255,255,.14);
+  display:flex;align-items:center;justify-content:center}
+.mmPartnerIcon svg{width:20px;height:20px}
+.mmPartnerText{flex:1;display:flex;flex-direction:column;gap:2px;min-width:0}
+.mmPartnerText small{font-size:8.5px;font-weight:900;letter-spacing:1.2px;color:#7fe0d6}
+.mmPartnerText b{font-size:14px}
+.mmPartnerText>span{font-size:10.5px;color:#bcd6e0}
+.mmBtnLight{background:#fff;color:var(--navy)}
+
+.mobileMenuSocial{display:flex;justify-content:center;gap:16px;margin-top:6px}
+.mobileMenuSocial a{width:36px;height:36px;border-radius:50%;background:var(--paper);display:flex;align-items:center;justify-content:center;color:var(--ink)}
+.mobileMenuFoot{text-align:center;font-size:10.5px;color:var(--muted);margin:0}
 
 .hero{background:linear-gradient(118deg,#061d30,#0a4163 58%,#087b75);color:#fff;position:relative;overflow:hidden}
 .hero:before{content:"";position:absolute;width:700px;height:700px;border:1px solid rgba(255,255,255,.13);border-radius:50%;right:-270px;top:-350px}
@@ -207,6 +251,18 @@ h2{font-size:38px;line-height:1.1;letter-spacing:-.8px;margin:7px 0 12px}
 .cardReadMore svg{width:12px;height:12px;transition:transform .2s ease}
 .pub:hover .cardReadMore{gap:8px}
 .pub:hover .cardReadMore svg{transform:translateX(2px)}
+
+.reportCard{display:flex;flex-direction:column}
+.reportCardIcon{margin:-20px -20px 12px;height:120px;border-radius:12px 12px 0 0;background:linear-gradient(120deg,#f3ecfc,#eaf3ff);
+  display:flex;align-items:center;justify-content:center;color:#8b5cf6}
+.reportCardIcon svg{width:34px;height:34px}
+.reportCardActions{margin-top:auto;padding-top:14px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.reportCardActions .cardReadMore{margin-top:0}
+.reportDownloadBtn{display:inline-flex;align-items:center;gap:6px;background:var(--navy);color:#fff;border:none;border-radius:8px;
+  padding:8px 13px;font-size:10.5px;font-weight:800;letter-spacing:.2px;cursor:pointer;transition:background .2s ease,transform .2s ease}
+.reportDownloadBtn svg{width:13px;height:13px}
+.reportDownloadBtn:hover{background:var(--blue);transform:translateY(-1px)}
+.reportDownloadBtn:disabled{opacity:.6;cursor:wait;transform:none}
 .contentCardImg{margin:-20px -20px 12px;border-radius:12px 12px 0 0;overflow:hidden;height:150px}
 .contentCardImg img{width:100%;height:100%;object-fit:cover}
 

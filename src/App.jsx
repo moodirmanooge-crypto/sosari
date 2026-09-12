@@ -7,6 +7,7 @@ import SectionLanding from "./pages/SectionLanding";
 import SectionPage from "./pages/SectionPage";
 import ArticlePage from "./pages/ArticlePage";
 import PartnerPage from "./pages/PartnerPage";
+import ReportsPage from "./pages/ReportsPage";
 import NotFound from "./pages/NotFound";
 
 import AdminLogin from "./admin/AdminLogin";
@@ -54,6 +55,7 @@ export default function App() {
           {/* Public site */}
           <Route path="/" element={<PublicLayout><Home /></PublicLayout>} />
           <Route path="/partner" element={<PublicLayout><PartnerPage /></PublicLayout>} />
+          <Route path="/reports" element={<PublicLayout><ReportsPage /></PublicLayout>} />
           <Route path="/article/:id" element={<PublicLayout><ArticlePage /></PublicLayout>} />
           <Route path="/section/:parent" element={<PublicLayout><SectionLanding /></PublicLayout>} />
           <Route path="/section/:parent/:child" element={<PublicLayout><SectionPage /></PublicLayout>} />
