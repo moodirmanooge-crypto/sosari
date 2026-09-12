@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { onAuthStateChanged, signOut, signInWithEmailAndPassword } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 import { auth, db } from "../firebase";
 
 const AdminAuthContext = createContext(null);
@@ -11,8 +11,15 @@ export function AdminAuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   // Real Firebase Auth session drives everything. As soon as Firebase
-  // confirms who's signed in, we cross-check them against the one admin
-  // doc (sosariAdmin/admin) by email, purely to load the display name/role.
+  // confirms who's signed in, we load the one admin doc (sosariAdmin/admin)
+  // for the display name/role. This is a single-admin system — whoever
+  // successfully authenticates with valid Firebase Auth credentials for
+  // this project IS the admin, so we don't re-check email equality here.
+  // (That equality check used to sign the admin out right after they
+  // verified a changed email, because Firestore's stored email hadn't
+  // caught up yet — see AdminSettings.) We self-heal instead: if the
+  // signed-in email differs from what's stored, we just update Firestore
+  // to match, so both stay in sync automatically.
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
       if (!firebaseUser || !firebaseUser.email) {
@@ -24,11 +31,16 @@ export function AdminAuthProvider({ children }) {
       try {
         const ref = doc(db, "sosariAdmin", "admin");
         const snap = await getDoc(ref);
-        if (snap.exists() && snap.data().email === firebaseUser.email) {
+        if (snap.exists()) {
+          const data = snap.data();
+          if (data.email !== firebaseUser.email) {
+            // Keep Firestore in sync after an email change completes.
+            await setDoc(ref, { email: firebaseUser.email }, { merge: true });
+          }
           setUser(firebaseUser);
-          setAdminProfile({ username: snap.data().username, role: snap.data().role || "admin" });
+          setAdminProfile({ username: data.username, role: data.role || "admin" });
         } else {
-          // Signed in to Firebase Auth but not the registered admin — kick them out.
+          // No admin record at all — sign them back out.
           await signOut(auth);
           setUser(null);
           setAdminProfile(null);

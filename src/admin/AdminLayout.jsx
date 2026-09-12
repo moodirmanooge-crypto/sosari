@@ -19,6 +19,7 @@ export default function AdminLayout() {
           <NavLink to="/admin" end>Dashboard</NavLink>
           <NavLink to="/admin/home-settings">Home Page Settings</NavLink>
           <NavLink to="/admin/messages">Partner Messages</NavLink>
+          <NavLink to="/admin/settings">Settings</NavLink>
         </nav>
         <div className="adminSidebarFooter">
           <span>{adminProfile?.username}</span>

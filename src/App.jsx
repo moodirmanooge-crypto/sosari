@@ -16,6 +16,7 @@ import AdminDashboard from "./admin/AdminDashboard";
 import AdminSectionManager from "./admin/AdminSectionManager";
 import AdminHomeSettings from "./admin/AdminHomeSettings";
 import AdminMessages from "./admin/AdminMessages";
+import AdminSettings from "./admin/AdminSettings";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 function PublicLayout({ children }) {
@@ -49,6 +50,7 @@ export default function App() {
             <Route index element={<AdminDashboard />} />
             <Route path="home-settings" element={<AdminHomeSettings />} />
             <Route path="messages" element={<AdminMessages />} />
+            <Route path="settings" element={<AdminSettings />} />
             <Route path="section/:parent/:child" element={<AdminSectionManager />} />
           </Route>
 

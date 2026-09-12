@@ -7,6 +7,7 @@ import ContentCard from "../components/ContentCard";
 import Loader from "../components/Loader";
 import Reveal, { RevealGroup, RevealItem } from "../components/Reveal";
 import { TextReveal, TiltCard, BlobBg } from "../components/Motion";
+import AboutOverview from "../components/AboutOverview";
 import {
   IconHome, IconChevronRight, IconInstitution, IconFlask, IconDb,
   IconBulb, IconChart, IconDoc, IconChat, IconArrow,
@@ -75,6 +76,8 @@ export default function SectionLanding() {
           </div>
         </div>
       </header>
+
+      {parent === "about" && <AboutOverview />}
 
       <section>
         <div className="wrap">
