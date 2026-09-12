@@ -146,12 +146,15 @@ button{font-family:inherit;cursor:pointer}
 
 @media(max-width:1050px){
   .heroV2-in{grid-template-columns:1fr;padding-top:56px}
-  .heroV2-right{display:none}
-  .statsBar{margin:20px auto 30px;flex-direction:column;align-items:flex-start;padding:20px 22px}
+  .heroV2-right{position:static;min-height:0;display:flex;flex-direction:column;gap:14px;margin-top:28px}
+  .dotGrid,.somaliaGlow{display:none}
+  .heroPhotoFrame{position:relative;width:100%;height:300px;margin:0}
+  .floatStack{position:static;width:100%;gap:10px}
 }
 @media(max-width:650px){
   .heroV2 h1{font-size:34px}
-  .statsBar{margin-top:0}
+  .heroPhotoFrame{height:220px}
+  .heroStatsInline{gap:16px}
 }
 
 .strip{border-bottom:1px solid var(--line);padding:16px 4.8vw}
@@ -282,6 +285,7 @@ h2{font-size:38px;line-height:1.1;letter-spacing:-.8px;margin:7px 0 12px}
 @media(max-width:650px){
   .top{display:none}
   .nav{height:70px}
+  .official-logo{width:190px;max-height:52px}
   .hero-in{padding:65px 4.8vw}
   .hero h1{font-size:38px;letter-spacing:-1px}
   .cards,.themes,.pubs,.flow,.foot{grid-template-columns:1fr}
