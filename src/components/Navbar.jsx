@@ -89,6 +89,26 @@ export default function Navbar() {
               <Link to={`/section/${group.key}`} className={isActive(group.key) ? "navActive" : ""}>
                 {group.label}
               </Link>
+
+              {group.groups ? (
+                <div className="drop research-menu">
+                  {group.groups.map((g, gi) => (
+                    <div key={g.subcap} className="researchGroupCol" style={{ "--gi": gi }}>
+                      <div className="subcap">{g.subcap}</div>
+                      {g.items.map((it, idx) => (
+                        <Link key={it.key} to={`/section/${it.key}`} style={{ "--i": idx }}>{it.label}</Link>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="drop">
+                  <div className="cap">{group.cap}</div>
+                  {group.items.map((it, idx) => (
+                    <Link key={it.key} to={`/section/${it.key}`} style={{ "--i": idx }}>{it.label}</Link>
+                  ))}
+                </div>
+              )}
             </div>
           ))}
           <div className="mi">

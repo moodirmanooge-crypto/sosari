@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { FOOTER_NAV } from "../config/navigation";
-import logo from "../assets/logo.png";
+import logo2 from "../assets/logo2.png";
 
 export default function Footer() {
   return (
@@ -8,7 +8,7 @@ export default function Footer() {
       <div className="foot">
         <div>
           <div className="brand">
-            <img className="official-logo footer-logo" src={logo} alt="SOSARI — Somali Statistics and Research Institute" />
+            <img className="official-logo footer-logo" src={logo2} alt="SOSARI — Somali Statistics and Research Institute" />
           </div>
           <p style={{ fontSize: 11, color: "#9bb0bd" }}>Evidence. Data. Policy. Impact.</p>
         </div>
