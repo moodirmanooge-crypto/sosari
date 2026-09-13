@@ -144,7 +144,7 @@ export default function Navbar() {
             <Link to="/" onClick={() => setMobileOpen(false)} className="mobileMenuItem mobileMenuItemHome">
               <span className="mmIcon"><IconHome /></span>
               <span className="mmText"><b>Home</b><span>Back to our main page</span></span>
-              <span className="mmBtn">Click now <IconArrow /></span>
+              <span className="mmBtn" aria-label="Open"><IconArrow /></span>
             </Link>
 
             {NAV.map((group) => {
@@ -160,7 +160,7 @@ export default function Navbar() {
                 >
                   <span className="mmIcon"><Icon /></span>
                   <span className="mmText"><b>{group.label}</b><span>{style.desc}</span></span>
-                  <span className="mmBtn">Click now <IconArrow /></span>
+                  <span className="mmBtn" aria-label="Open"><IconArrow /></span>
                 </Link>
               );
             })}
@@ -172,7 +172,7 @@ export default function Navbar() {
             >
               <span className="mmIcon"><IconDoc /></span>
               <span className="mmText"><b>Reports</b><span>Download published SOSARI reports</span></span>
-              <span className="mmBtn">Click now <IconArrow /></span>
+              <span className="mmBtn" aria-label="Open"><IconArrow /></span>
             </Link>
           </div>
 
@@ -183,7 +183,7 @@ export default function Navbar() {
               <b>PARTNER WITH SOSARI</b>
               <span>Stronger data. Brighter Somalia.</span>
             </span>
-            <span className="mmBtn mmBtnLight">Click now <IconArrow /></span>
+            <span className="mmBtn mmBtnLight" aria-label="Open"><IconArrow /></span>
           </Link>
 
           <div className="mobileMenuSocial">

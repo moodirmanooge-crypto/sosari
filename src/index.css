@@ -74,7 +74,7 @@ button{font-family:inherit;cursor:pointer}
 }
 
 /* ---------- Full-screen mobile menu ---------- */
-.mobileMenuOverlay{position:fixed;inset:0;z-index:300;background:#fff;overflow-y:auto;
+.mobileMenuOverlay{position:fixed;inset:0;z-index:300;background:#fff;overflow-y:auto;overflow-x:hidden;
   padding:22px 20px 34px;display:flex;flex-direction:column;gap:16px;
   background-image:radial-gradient(circle at 100% 0%,rgba(8,110,173,.06),transparent 45%),
     radial-gradient(circle at 0% 100%,rgba(7,134,125,.06),transparent 45%)}
@@ -101,9 +101,10 @@ button{font-family:inherit;cursor:pointer}
 .mobileMenuItemHome .mmText b{color:#fff}
 .mmText span{font-size:10.5px;color:var(--muted)}
 .mobileMenuItemHome .mmText span{color:rgba(255,255,255,.85)}
-.mmBtn{flex:none;display:inline-flex;align-items:center;gap:5px;background:var(--mmBg,#f5f8fa);color:var(--mmFg,var(--blue));
-  border:1px solid rgba(0,0,0,.06);border-radius:999px;padding:8px 13px;font-size:11px;font-weight:800;white-space:nowrap}
-.mmBtn svg{width:12px;height:12px}
+.mmBtn{flex:none;display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;
+  background:var(--mmBg,#f5f8fa);color:var(--mmFg,var(--blue));
+  border:1px solid rgba(0,0,0,.06);border-radius:50%}
+.mmBtn svg{width:14px;height:14px}
 .mobileMenuItemHome .mmBtn{background:#fff;color:var(--blue)}
 
 .mobileMenuPartner{display:flex;align-items:center;gap:14px;border-radius:16px;padding:16px;margin-top:4px;
@@ -181,6 +182,11 @@ button{font-family:inherit;cursor:pointer}
 .stripCenter{display:flex;align-items:center;justify-content:center;gap:22px}
 .stripLine{flex:0 0 70px;height:1px;background:var(--line)}
 .stripWords{font-size:11px;letter-spacing:2px;font-weight:800;color:var(--muted);text-transform:uppercase;white-space:nowrap}
+@media(max-width:650px){
+  .stripCenter{gap:10px}
+  .stripLine{flex:0 0 20px}
+  .stripWords{font-size:9px;letter-spacing:.8px;white-space:normal;text-align:center}
+}
 .statItem{display:flex;align-items:center;gap:11px;color:var(--ink)}
 .statItem svg{width:26px;height:26px;color:var(--blue);flex:none}
 .statItem b{display:block;font-size:19px;line-height:1.1}
