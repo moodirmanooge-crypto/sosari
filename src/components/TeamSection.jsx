@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
 import { AnimatePresence, motion } from "framer-motion";
 import { db } from "../firebase";
@@ -94,6 +94,7 @@ export default function TeamSection() {
   const slotCount = useSlotCount();
   const [windowStart, setWindowStart] = useState(0);
   const [direction, setDirection] = useState(1);
+  const intervalRef = useRef(null);
 
   useEffect(() => {
     const q = query(collection(db, "teamMembers"), orderBy("order", "asc"));
@@ -118,15 +119,34 @@ export default function TeamSection() {
 
   const canRotate = members.length > slotCount;
 
+  function startAutoTimer() {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    if (!canRotate) return;
+    intervalRef.current = setInterval(() => {
+      setDirection(1);
+      setWindowStart((s) => (s + 1) % members.length);
+    }, 3000);
+  }
+
+  // Auto-advance every 3 seconds on its own — on mobile and on desktop —
+  // not only when the person actively taps an arrow.
+  useEffect(() => {
+    startAutoTimer();
+    return () => clearInterval(intervalRef.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canRotate, members.length]);
+
   function goNext() {
     if (!canRotate) return;
     setDirection(1);
     setWindowStart((s) => (s + 1) % members.length);
+    startAutoTimer();
   }
   function goPrev() {
     if (!canRotate) return;
     setDirection(-1);
     setWindowStart((s) => (s - 1 + members.length) % members.length);
+    startAutoTimer();
   }
 
   const visible = useMemo(() => {
