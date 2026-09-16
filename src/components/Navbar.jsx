@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useNavigation } from "../contexts/NavigationContext";
 import logo from "../assets/logo.png";
 import {
@@ -19,13 +19,79 @@ const MOBILE_MENU_STYLE = {
   dialogue: { bg: "#fdeaf0", fg: "#e0507a", icon: IconChat, desc: "Engage, discuss and collaborate" },
 };
 
+// Flattens the nav config into one searchable list of every real page on
+// the site: "Home", every top-level section, and every sub-page under it
+// (including the nested Research categories) — each with its own link.
+function buildSearchIndex(NAV) {
+  const index = [
+    { label: "Home", group: "", to: "/" },
+    { label: "Our Work", group: "", to: "/our-work" },
+    { label: "Work With SOSARI", group: "", to: "/partner" },
+  ];
+  NAV.forEach((group) => {
+    index.push({ label: group.label, group: "", to: `/section/${group.key}` });
+    if (group.groups) {
+      group.groups.forEach((g) => {
+        g.items.forEach((it) => {
+          index.push({ label: it.label, group: `${group.label} — ${g.subcap}`, to: `/section/${it.key}` });
+        });
+      });
+    } else if (group.items) {
+      group.items.forEach((it) => {
+        index.push({ label: it.label, group: group.label, to: `/section/${it.key}` });
+      });
+    }
+  });
+  return index;
+}
+
 export default function Navbar() {
   const { nav: NAV } = useNavigation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [openKey, setOpenKey] = useState(null);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const searchInputRef = useRef(null);
   const location = useLocation();
+  const navigate = useNavigate();
   const isHome = location.pathname === "/";
+
+  const searchIndex = useMemo(() => buildSearchIndex(NAV), [NAV]);
+  const searchResults = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return [];
+    return searchIndex.filter((item) => item.label.toLowerCase().includes(q)).slice(0, 12);
+  }, [searchQuery, searchIndex]);
+
+  function openSearch() {
+    setSearchOpen(true);
+    setSearchQuery("");
+  }
+  function closeSearch() {
+    setSearchOpen(false);
+    setSearchQuery("");
+  }
+  function goToResult(to) {
+    closeSearch();
+    navigate(to);
+  }
+
+  useEffect(() => {
+    if (searchOpen) {
+      const t = setTimeout(() => searchInputRef.current?.focus(), 30);
+      return () => clearTimeout(t);
+    }
+  }, [searchOpen]);
+
+  useEffect(() => {
+    if (!searchOpen) return;
+    function onKey(e) {
+      if (e.key === "Escape") closeSearch();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [searchOpen]);
 
   useEffect(() => {
     function onScroll() {
@@ -116,7 +182,7 @@ export default function Navbar() {
             </div>
           ))}
 
-          <button className="searchBtn" aria-label="Search" type="button" title="Search">
+          <button className="searchBtn" aria-label="Search" type="button" title="Search" onClick={openSearch}>
             <IconSearch />
           </button>
           <Link className="cta" to="/partner">
@@ -183,6 +249,46 @@ export default function Navbar() {
             <a href="https://www.linkedin.com/company/somali-statistics-and-research-institute-sosari/" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn"><IconLinkedIn /></a>
           </div>
           <p className="mobileMenuFoot">A data-driven Somalia for a better tomorrow</p>
+        </div>
+      )}
+
+      {searchOpen && (
+        <div className="siteSearchOverlay" onClick={closeSearch}>
+          <div className="siteSearchBox" onClick={(e) => e.stopPropagation()}>
+            <div className="siteSearchInputRow">
+              <IconSearch />
+              <input
+                ref={searchInputRef}
+                type="text"
+                placeholder="Search the site… (e.g. Who We Are)"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              <button type="button" className="siteSearchClose" onClick={closeSearch} aria-label="Close search">
+                <IconX />
+              </button>
+            </div>
+
+            {searchQuery.trim() && (
+              <div className="siteSearchResults">
+                {searchResults.length === 0 ? (
+                  <p className="siteSearchEmpty">No pages match "{searchQuery}".</p>
+                ) : (
+                  searchResults.map((r) => (
+                    <button
+                      key={r.to}
+                      type="button"
+                      className="siteSearchResultItem"
+                      onClick={() => goToResult(r.to)}
+                    >
+                      <span className="siteSearchResultLabel">{r.label}</span>
+                      {r.group && <span className="siteSearchResultGroup">{r.group}</span>}
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
         </div>
       )}
     </>

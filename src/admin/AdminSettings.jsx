@@ -117,6 +117,10 @@ export default function AdminSettings() {
       }
       if (passwordChanged) {
         await updatePassword(auth.currentUser, newPassword);
+        // Keep the Firestore admin record's "password" field in sync so it
+        // always reflects the real, current login password for reference —
+        // this is the ONLY place the password should ever be changed from.
+        await setDoc(doc(db, "sosariAdmin", "admin"), { password: newPassword }, { merge: true });
       }
 
       if (passwordChanged) {
