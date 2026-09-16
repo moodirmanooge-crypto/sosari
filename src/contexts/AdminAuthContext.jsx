@@ -57,21 +57,44 @@ export function AdminAuthProvider({ children }) {
   }, []);
 
   // Login flow: the admin types a USERNAME (not an email). We look the
-  // username up in sosariAdmin/admin to find the linked email, then
-  // authenticate for real against Firebase Authentication with that
-  // email + the password the admin typed. The password itself is never
-  // stored in or checked against Firestore — Firebase Auth owns it.
+  // username up in sosariAdmin/admin to find the linked email.
+  //
+  // The password is checked against Firestore's own "password" field
+  // FIRST — that's the value the admin can see and edit in Firestore, so
+  // that's the check that decides whether it's "wrong". Only once that
+  // matches do we sign in for real against Firebase Authentication (still
+  // required — Storage's upload rules need a real authenticated session).
+  // AdminSettings keeps both passwords in sync on every change, so as
+  // long as the password was last changed from Admin > Settings (never
+  // edited by hand in Firestore), this second step always succeeds too.
   async function loginWithUsername(username, password) {
     const ref = doc(db, "sosariAdmin", "admin");
     const snap = await getDoc(ref);
     if (!snap.exists() || snap.data().username !== username.trim()) {
       throw new Error("Username-kan lama helin. Fadlan hubi username-ka.");
     }
-    const email = snap.data().email;
+    const data = snap.data();
+    const email = data.email;
     if (!email) {
       throw new Error("Admin-kan email lama xirin. La xiriir maamulaha.");
     }
-    await signInWithEmailAndPassword(auth, email, password);
+    if (data.password !== undefined && password !== data.password) {
+      throw new Error("Wrong password");
+    }
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+    } catch (err) {
+      if (err?.code === "auth/invalid-credential" || err?.code === "auth/wrong-password") {
+        // Firestore says it matched, but the real Firebase Authentication
+        // account still has a different password — they're out of sync,
+        // almost always because the password was edited by hand in
+        // Firestore instead of through Admin > Settings.
+        throw new Error(
+          "Password-ka Firestore ku qoran sax buu u eegayaa, laakiin account-ka rasmiga ah weli ma isticmaali karo. Geli Admin > Settings oo password-ka mar kale ku qor si labaduba isugu mid u noqdaan."
+        );
+      }
+      throw err;
+    }
   }
 
   async function logout() {
