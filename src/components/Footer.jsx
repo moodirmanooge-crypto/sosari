@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { FOOTER_NAV } from "../config/navigation";
 import { useNavigation } from "../contexts/NavigationContext";
-import logo2 from "../assets/logo2.png";
+import logo from "../assets/logo.png";
 import {
   IconWhatsApp,
   IconFacebook,
@@ -75,7 +75,7 @@ export default function Footer() {
           <section className="sosariBrand">
             <div className="sosariLogoBox">
               <img
-                src={logo2}
+                src={logo}
                 className="sosariLogo"
                 alt="SOSARI — Somali Statistics and Research Institute"
               />
