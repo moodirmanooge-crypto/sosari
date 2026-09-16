@@ -5,6 +5,7 @@ import { SECTION_META, DEFAULT_SECTION_META } from "../config/sectionMeta";
 import { fetchSectionContent } from "../utils/content";
 import ContentCard from "../components/ContentCard";
 import Loader from "../components/Loader";
+import TeamSection from "../components/TeamSection";
 import Reveal, { RevealGroup, RevealItem } from "../components/Reveal";
 import { TextReveal, TiltCard, BlobBg, ImageReveal } from "../components/Motion";
 import {
@@ -22,6 +23,15 @@ const ICONS = {
   doc: IconDoc,
   chat: IconChat,
 };
+
+// "Partners & Networks" content items can each be tagged with one of
+// these three categories from the admin panel; the public page below
+// groups and displays them under these headings instead of a flat list.
+export const PARTNERS_NETWORKS_CATEGORIES = [
+  "Strategic Partners",
+  "Research & Academic Networks",
+  "Consortium & Project Partnerships",
+];
 
 export default function SectionPage() {
   const { nav: NAV, sectionIndex: SECTION_INDEX } = useNavigation();
@@ -82,7 +92,9 @@ export default function SectionPage() {
 
       <section>
         <div className="wrap">
-          {loading ? (
+          {sectionKey === "about/our-team" ? (
+            <TeamSection />
+          ) : loading ? (
             <Loader />
           ) : items.length === 0 ? (
             <Reveal as="p" className="lead">
@@ -118,6 +130,25 @@ export default function SectionPage() {
                 </div>
               )}
             </Reveal>
+          ) : sectionKey === "about/partners-networks" ? (
+            <div className="partnersNetworksGroups">
+              {PARTNERS_NETWORKS_CATEGORIES.map((cat, ci) => {
+                const catItems = items.filter((it) => (it.category || PARTNERS_NETWORKS_CATEGORIES[0]) === cat);
+                if (catItems.length === 0) return null;
+                return (
+                  <Reveal as="div" key={cat} delay={ci * 0.06} className="partnersNetworksGroup">
+                    <h3 className="partnersNetworksGroupTitle">{cat}</h3>
+                    <RevealGroup className="pubs" stagger={0.06}>
+                      {catItems.map((item) => (
+                        <RevealItem key={item.id}>
+                          <TiltCard><ContentCard item={item} /></TiltCard>
+                        </RevealItem>
+                      ))}
+                    </RevealGroup>
+                  </Reveal>
+                );
+              })}
+            </div>
           ) : (
             <RevealGroup className="pubs" stagger={0.07}>
               {items.map((item) => (

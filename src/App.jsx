@@ -18,6 +18,7 @@ import AdminDashboard from "./admin/AdminDashboard";
 import AdminSectionManager from "./admin/AdminSectionManager";
 import AdminHomeSettings from "./admin/AdminHomeSettings";
 import AdminOurWork from "./admin/AdminOurWork";
+import AdminTeam from "./admin/AdminTeam";
 import AdminMessages from "./admin/AdminMessages";
 import AdminSettings from "./admin/AdminSettings";
 import AdminPartners from "./admin/AdminPartners";
@@ -69,6 +70,7 @@ export default function App() {
             <Route index element={<AdminDashboard />} />
             <Route path="home-settings" element={<AdminHomeSettings />} />
             <Route path="our-work" element={<AdminOurWork />} />
+            <Route path="team" element={<AdminTeam />} />
             <Route path="partners" element={<AdminPartners />} />
             <Route path="navigation" element={<AdminNavigation />} />
             <Route path="messages" element={<AdminMessages />} />

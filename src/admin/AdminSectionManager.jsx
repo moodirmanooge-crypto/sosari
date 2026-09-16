@@ -6,10 +6,11 @@ import {
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { db, storage } from "../firebase";
 import { useNavigation } from "../contexts/NavigationContext";
+import { PARTNERS_NETWORKS_CATEGORIES } from "../pages/SectionPage";
 
 const EMPTY_FORM = {
   title: "", summary: "", body: "", tag: "", author: "", date: "",
-  published: true, featuredHome: false, order: 0,
+  published: true, featuredHome: false, order: 0, category: PARTNERS_NETWORKS_CATEGORIES[0],
 };
 
 // Preset max dimensions the admin can pick before uploading, so a photo
@@ -128,6 +129,7 @@ export default function AdminSectionManager() {
       published: item.published !== false,
       featuredHome: !!item.featuredHome,
       order: item.order || 0,
+      category: item.category || PARTNERS_NETWORKS_CATEGORIES[0],
     });
     setImageFile(null);
     setImagePreview(item.imageUrl || "");
@@ -303,6 +305,16 @@ export default function AdminSectionManager() {
           <label>Qoraalka buuxa (Body)
             <textarea rows={8} value={form.body} onChange={(e) => setForm({ ...form, body: e.target.value })} />
           </label>
+
+          {sectionKey === "about/partners-networks" && (
+            <label>Category (qaybta uu ku hoos yaal bogga)
+              <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}>
+                {PARTNERS_NETWORKS_CATEGORIES.map((cat) => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+              </select>
+            </label>
+          )}
 
           <div className="adminFormRow">
             <label>Tag (tusaale: POLICY BRIEF)

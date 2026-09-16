@@ -21,6 +21,7 @@ export default function AdminLayout() {
           <NavLink to="/admin" end>Dashboard</NavLink>
           <NavLink to="/admin/home-settings">Home Page Settings</NavLink>
           <NavLink to="/admin/our-work">Our Work Settings</NavLink>
+          <NavLink to="/admin/team">Our Team</NavLink>
           <NavLink to="/admin/partners">Our Partners</NavLink>
           <NavLink to="/admin/navigation">Navigation Menu</NavLink>
           <NavLink to="/admin/messages">

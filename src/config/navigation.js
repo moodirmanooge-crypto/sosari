@@ -21,6 +21,8 @@ export const DEFAULT_NAV = [
       { label: "Governance & Independence", key: "about/governance-independence" },
       { label: "Leadership", key: "about/leadership" },
       { label: "Our Team", key: "about/our-team" },
+      { label: "Partners & Networks", key: "about/partners-networks" },
+      { label: "Careers", key: "about/careers" },
       { label: "Annual Report", key: "knowledge/annual-report" },
     ],
   },
