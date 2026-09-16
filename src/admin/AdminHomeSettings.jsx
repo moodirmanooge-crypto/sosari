@@ -2,6 +2,18 @@ import { useEffect, useState } from "react";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { db, storage } from "../firebase";
+import heroPhoto from "../assets/hero-photo.jpg";
+import heroPhoto1 from "../assets/hero-photo1.jpg";
+import heroPhoto2 from "../assets/hero-photo2.jpg";
+
+// Shown in the admin list whenever no custom hero photos have been saved
+// yet, so the admin can actually see (and remove/replace) what's live on
+// the homepage right now, instead of an empty box.
+const BUILT_IN_HERO_PHOTOS = [
+  { url: heroPhoto, path: null },
+  { url: heroPhoto1, path: null },
+  { url: heroPhoto2, path: null },
+];
 
 const DEFAULTS = {
   heroEyebrow: "Evidence • Data • Policy • Impact",
@@ -63,7 +75,8 @@ export default function AdminHomeSettings() {
 
   // Hero photos: existing (already saved, {url, path}) + newly picked
   // files waiting to be uploaded on Save, plus removal tracking.
-  const [heroExisting, setHeroExisting] = useState([]);
+  const [heroExisting, setHeroExisting] = useState(BUILT_IN_HERO_PHOTOS);
+  const [usingDefaults, setUsingDefaults] = useState(true);
   const [heroNewFiles, setHeroNewFiles] = useState([]);
   const [heroNewPreviews, setHeroNewPreviews] = useState([]);
   const [heroSize, setHeroSize] = useState("medium");
@@ -74,7 +87,11 @@ export default function AdminHomeSettings() {
       if (snap.exists()) {
         const data = snap.data();
         setForm({ ...DEFAULTS, ...data });
-        setHeroExisting(Array.isArray(data.heroPhotos) ? data.heroPhotos : []);
+        if (Array.isArray(data.heroPhotos) && data.heroPhotos.length > 0) {
+          setHeroExisting(data.heroPhotos);
+          setUsingDefaults(false);
+        }
+        // else: leave the built-in photos showing (usingDefaults stays true)
       }
       setLoading(false);
     });
@@ -83,12 +100,14 @@ export default function AdminHomeSettings() {
   function onHeroFilesChange(e) {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
+    setUsingDefaults(false);
     setHeroNewFiles((prev) => [...prev, ...files]);
     setHeroNewPreviews((prev) => [...prev, ...files.map((f) => URL.createObjectURL(f))]);
     e.target.value = "";
   }
 
   function removeExistingHeroPhoto(index) {
+    setUsingDefaults(false);
     setHeroExisting((prev) => prev.filter((_, i) => i !== index));
   }
   function removeNewHeroPhoto(index) {
@@ -96,6 +115,7 @@ export default function AdminHomeSettings() {
     setHeroNewPreviews((prev) => prev.filter((_, i) => i !== index));
   }
   function moveExistingHeroPhoto(index, dir) {
+    setUsingDefaults(false);
     setHeroExisting((prev) => {
       const arr = prev.slice();
       const target = index + dir;
@@ -138,10 +158,13 @@ export default function AdminHomeSettings() {
         }
       });
 
-      const heroPhotos = [...heroExisting, ...uploadedHero];
+      const heroPhotos = usingDefaults && heroNewFiles.length === 0
+        ? [] // no explicit override saved — keep using the site's built-in default photos
+        : [...heroExisting, ...uploadedHero];
 
       await setDoc(doc(db, "siteSettings", "home"), { ...form, heroPhotos }, { merge: true });
-      setHeroExisting(heroPhotos);
+      setHeroExisting(heroPhotos.length > 0 ? heroPhotos : BUILT_IN_HERO_PHOTOS);
+      setUsingDefaults(heroPhotos.length === 0);
       setHeroNewFiles([]);
       setHeroNewPreviews([]);
       setSaved(true);
