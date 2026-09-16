@@ -75,7 +75,7 @@ export default function Navbar() {
               <Link
                 to={`/section/${group.key}`}
                 className={isActive(group.key) ? "navActive" : ""}
-                onClick={() => setOpenKey(null)}
+                onClick={(e) => { setOpenKey(null); e.currentTarget.blur(); }}
               >
                 {group.label}
               </Link>
@@ -86,7 +86,14 @@ export default function Navbar() {
                     <div key={g.subcap} className="researchGroupCol" style={{ "--gi": gi }}>
                       <div className="subcap">{g.subcap}</div>
                       {g.items.map((it, idx) => (
-                        <Link key={it.key} to={`/section/${it.key}`} style={{ "--i": idx }} onClick={() => setOpenKey(null)}>{it.label}</Link>
+                        <Link
+                          key={it.key}
+                          to={`/section/${it.key}`}
+                          style={{ "--i": idx }}
+                          onClick={(e) => { setOpenKey(null); e.currentTarget.blur(); }}
+                        >
+                          {it.label}
+                        </Link>
                       ))}
                     </div>
                   ))}
@@ -95,7 +102,14 @@ export default function Navbar() {
                 <div className={`drop${openKey === group.key ? " dropOpen" : ""}`}>
                   <div className="cap">{group.cap}</div>
                   {group.items.map((it, idx) => (
-                    <Link key={it.key} to={`/section/${it.key}`} style={{ "--i": idx }} onClick={() => setOpenKey(null)}>{it.label}</Link>
+                    <Link
+                      key={it.key}
+                      to={`/section/${it.key}`}
+                      style={{ "--i": idx }}
+                      onClick={(e) => { setOpenKey(null); e.currentTarget.blur(); }}
+                    >
+                      {it.label}
+                    </Link>
                   ))}
                 </div>
               )}
