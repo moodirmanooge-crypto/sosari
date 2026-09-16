@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { AnimatePresence, motion } from "framer-motion";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase";
 import { fetchFeaturedHome } from "../utils/content";
