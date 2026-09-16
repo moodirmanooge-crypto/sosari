@@ -3,6 +3,29 @@ import { useNavigate, Navigate } from "react-router-dom";
 import { useAdminAuth } from "../contexts/AdminAuthContext";
 import logo from "../assets/logo.png";
 
+// Firebase Auth returns raw codes like "Firebase: Error (auth/invalid-credential)."
+// This turns them into plain messages for the admin instead.
+function friendlyAuthError(err) {
+  const code = err?.code || "";
+  switch (code) {
+    case "auth/invalid-credential":
+    case "auth/wrong-password":
+      return "Wrong password";
+    case "auth/user-not-found":
+      return "No account found with that username.";
+    case "auth/invalid-email":
+      return "That username/email isn't valid.";
+    case "auth/too-many-requests":
+      return "Too many attempts. Please wait a moment and try again.";
+    case "auth/network-request-failed":
+      return "Network error. Check your connection and try again.";
+    default:
+      // Custom errors thrown by loginWithUsername (e.g. unknown username)
+      // don't have a Firebase auth code — keep their own message.
+      return err?.message || "Login failed. Please check your username and password.";
+  }
+}
+
 export default function AdminLogin() {
   const { loginWithUsername, user, adminProfile, loading } = useAdminAuth();
   const [username, setUsername] = useState("");
@@ -24,7 +47,7 @@ export default function AdminLogin() {
       navigate("/admin");
     } catch (err) {
       console.error(err);
-      setError(err.message || "Login-ku wuu fashilmay. Hubi username-ka iyo password-ka.");
+      setError(friendlyAuthError(err));
     } finally {
       setBusy(false);
     }
