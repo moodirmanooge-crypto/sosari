@@ -148,7 +148,7 @@ export default function AdminTeam() {
       cancelEdit();
     } catch (err) {
       console.error(err);
-      setError("Wax baa qaldamay markii la keydinayay. Isku day mar kale.");
+      setError(`Wax baa qaldamay: ${err.code || err.message || "khalad aan la aqoon"}`);
     } finally {
       setSaving(false);
     }
