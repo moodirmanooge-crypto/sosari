@@ -57,7 +57,10 @@ export default function Home() {
             text: data.heroText || DEFAULT_HERO.text,
           });
           if (Array.isArray(data.heroPhotos) && data.heroPhotos.length > 0) {
-            setHeroPhotos(data.heroPhotos);
+            // Firestore stores each hero photo as {url, path}; the built-in
+            // defaults are plain string URLs — normalise to plain strings
+            // either way, since that's what the <img src> below expects.
+            setHeroPhotos(data.heroPhotos.map((p) => (typeof p === "string" ? p : p.url)));
             setHeroSlide(0);
           }
         }
