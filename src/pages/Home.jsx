@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase";
@@ -14,7 +13,7 @@ import heroPhoto from "../assets/hero-photo.jpg";
 import heroPhoto1 from "../assets/hero-photo1.jpg";
 import heroPhoto2 from "../assets/hero-photo2.jpg";
 
-const HERO_PHOTOS = [heroPhoto, heroPhoto1, heroPhoto2];
+const DEFAULT_HERO_PHOTOS = [heroPhoto, heroPhoto1, heroPhoto2];
 const HERO_SLIDE_MS = 4000;
 
 function splitHeroTitle(title) {
@@ -32,16 +31,17 @@ const DEFAULT_HERO = {
 
 export default function Home() {
   const [hero, setHero] = useState(DEFAULT_HERO);
+  const [heroPhotos, setHeroPhotos] = useState(DEFAULT_HERO_PHOTOS);
   const [featured, setFeatured] = useState([]);
   const [loading, setLoading] = useState(true);
   const [heroSlide, setHeroSlide] = useState(0);
 
   useEffect(() => {
     const id = setInterval(() => {
-      setHeroSlide((i) => (i + 1) % HERO_PHOTOS.length);
+      setHeroSlide((i) => (i + 1) % heroPhotos.length);
     }, HERO_SLIDE_MS);
     return () => clearInterval(id);
-  }, []);
+  }, [heroPhotos.length]);
 
   useEffect(() => {
     let mounted = true;
@@ -55,6 +55,10 @@ export default function Home() {
             title: data.heroTitle || DEFAULT_HERO.title,
             text: data.heroText || DEFAULT_HERO.text,
           });
+          if (Array.isArray(data.heroPhotos) && data.heroPhotos.length > 0) {
+            setHeroPhotos(data.heroPhotos);
+            setHeroSlide(0);
+          }
         }
       } catch (e) {
         console.error(e);
@@ -98,8 +102,8 @@ export default function Home() {
               <div className="heroPhotoFrame">
                 <AnimatePresence mode="popLayout" custom={1}>
                   <motion.img
-                    key={HERO_PHOTOS[heroSlide]}
-                    src={HERO_PHOTOS[heroSlide]}
+                    key={heroPhotos[heroSlide]}
+                    src={heroPhotos[heroSlide]}
                     alt="SOSARI team at work"
                     className="heroPhotoImg"
                     custom={1}
