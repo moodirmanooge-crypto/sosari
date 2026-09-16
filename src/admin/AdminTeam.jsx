@@ -5,7 +5,7 @@ import {
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { db, storage } from "../firebase";
 
-const EMPTY_FORM = { name: "", title: "", bio: "", order: 0, published: true };
+const EMPTY_FORM = { name: "", title: "", bio: "", quote: "", isLeader: false, order: 0, published: true };
 
 // Same resize/compress helper used across the admin panel, so a team
 // photo straight off a phone doesn't end up huge on the live site.
@@ -84,6 +84,8 @@ export default function AdminTeam() {
       name: item.name || "",
       title: item.title || "",
       bio: item.bio || "",
+      quote: item.quote || "",
+      isLeader: !!item.isLeader,
       order: item.order || 0,
       published: item.published !== false,
     });
@@ -197,11 +199,18 @@ export default function AdminTeam() {
           <label>Khibrad / Sharaxaad gaaban (Experience / Bio)
             <textarea rows={4} value={form.bio} onChange={(e) => setForm({ ...form, bio: e.target.value })} />
           </label>
+          <label>Quote gaaban (ku muuqda goobta hoose ee card-ka, ikhtiyaari)
+            <textarea rows={2} placeholder='Tusaale: "Education and service for a brighter community."' value={form.quote} onChange={(e) => setForm({ ...form, quote: e.target.value })} />
+          </label>
 
           <div className="adminFormRow">
             <label className="checkboxLabel">
               <input type="checkbox" checked={form.published} onChange={(e) => setForm({ ...form, published: e.target.checked })} />
               Published (muuqan bogga)
+            </label>
+            <label className="checkboxLabel">
+              <input type="checkbox" checked={form.isLeader} onChange={(e) => setForm({ ...form, isLeader: e.target.checked })} />
+              Leader (calaamad "★ LEADER" ku dar)
             </label>
             <label>Order (tirooyin, 0 = hore)
               <input type="number" value={form.order} onChange={(e) => setForm({ ...form, order: e.target.value })} />

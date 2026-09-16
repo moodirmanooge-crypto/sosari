@@ -304,23 +304,55 @@ h2{font-size:42px;line-height:1.12;letter-spacing:-.8px;margin:7px 0 12px}
 .partnersNetworksGroup .pubs{margin-top:16px}
 .partnersNetworksGroupTitle{font-size:20px;font-weight:900;color:var(--ink);margin:0;padding-bottom:10px;border-bottom:2px solid var(--line)}
 
-/* Our Team — animated photo-card grid */
-.teamGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;margin-top:28px}
-.teamCard{background:#fff;border:1px solid var(--line);border-radius:16px;padding:26px 20px;text-align:center;
-  display:flex;flex-direction:column;align-items:center;transition:transform .28s ease,box-shadow .28s ease,border-color .28s ease}
-.teamCard:hover{transform:translateY(-6px);box-shadow:0 22px 44px rgba(7,31,52,.12);border-color:transparent}
-.teamCardPhotoWrap{width:112px;height:112px;border-radius:50%;padding:3px;margin-bottom:16px;
-  background:linear-gradient(135deg,var(--blue),var(--teal));transition:transform .3s ease}
-.teamCard:hover .teamCardPhotoWrap{transform:scale(1.06) rotate(-2deg)}
-.teamCardPhoto{width:100%;height:100%;border-radius:50%;object-fit:cover;display:block;border:3px solid #fff}
-.teamCardPhotoFallback{display:flex;align-items:center;justify-content:center;background:var(--paper);
-  color:var(--blue);font-size:34px;font-weight:900;border:3px solid #fff}
-.teamCardBody{display:flex;flex-direction:column;gap:5px}
-.teamCardName{font-size:16px;font-weight:900;color:var(--ink)}
-.teamCardTitle{font-size:12px;font-weight:700;color:var(--blue);letter-spacing:.2px}
-.teamCardBio{font-size:12.5px;color:var(--muted);line-height:1.5;margin:6px 0 0}
-@media(max-width:1020px){.teamGrid{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:560px){.teamGrid{grid-template-columns:1fr}}
+/* Our Team — banner-style card carousel */
+.teamCarouselRow{display:flex;align-items:center;gap:14px;margin-top:28px}
+.teamCarouselArrow{flex:none;width:42px;height:42px;border-radius:50%;background:#fff;border:1px solid var(--line);
+  display:flex;align-items:center;justify-content:center;color:var(--navy);box-shadow:0 8px 20px rgba(7,31,52,.1);
+  cursor:pointer;transition:transform .15s ease,box-shadow .15s ease;z-index:2}
+.teamCarouselArrow:hover{transform:translateY(-1px);box-shadow:0 12px 26px rgba(7,31,52,.16)}
+.teamCarouselArrow svg{width:18px;height:18px}
+.teamCarouselArrowLeft svg{transform:rotate(180deg)}
+.teamCarouselTrack{flex:1;display:grid;grid-template-columns:repeat(3,1fr);gap:22px;overflow:hidden}
+@media(max-width:980px){.teamCarouselTrack{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:640px){.teamCarouselTrack{grid-template-columns:1fr}}
+.teamCarouselSlot{position:relative;min-height:340px}
+
+.teamCard2{position:absolute;inset:0;background:#fff;border-radius:18px;overflow:hidden;
+  box-shadow:0 14px 34px rgba(7,31,52,.08);border-bottom:4px solid var(--blue);display:flex;flex-direction:column;align-items:center;
+  padding:0 20px 22px;transition:transform .25s ease,box-shadow .25s ease}
+.teamCard2:hover{transform:translateY(-4px);box-shadow:0 22px 48px rgba(7,31,52,.14)}
+.teamCard2Leader{border-bottom-color:var(--gold)}
+
+.teamCard2Banner{position:absolute;top:0;left:0;right:0;height:112px;
+  background:linear-gradient(135deg,var(--blue),#2a9fe0);
+  clip-path:polygon(0% 0%,100% 0%,100% 78%,50% 52%,0% 78%)}
+.teamCard2Leader .teamCard2Banner{background:linear-gradient(135deg,var(--navy),var(--navy2))}
+.teamCard2LeaderBadge{position:absolute;top:12px;right:12px;background:var(--gold);color:#2a1c00;font-size:10px;font-weight:900;
+  letter-spacing:.4px;padding:5px 10px;border-radius:20px;display:flex;align-items:center;gap:4px}
+
+.teamCard2PhotoWrap{position:relative;width:104px;height:104px;margin:52px 0 14px;flex:none}
+.teamCard2Photo{width:100%;height:100%;border-radius:50%;object-fit:cover;display:block;border:4px solid #fff;
+  box-shadow:0 6px 16px rgba(7,31,52,.18)}
+.teamCard2PhotoFallback{display:flex;align-items:center;justify-content:center;background:var(--paper);
+  color:var(--blue);font-size:30px;font-weight:900}
+.teamCard2PhotoBadge{position:absolute;bottom:2px;right:2px;width:26px;height:26px;border-radius:50%;background:var(--blue);
+  color:#fff;display:flex;align-items:center;justify-content:center;border:2px solid #fff}
+.teamCard2PhotoBadge svg{width:12px;height:12px}
+
+.teamCard2Body{display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;flex:1}
+.teamCard2Name{font-size:15px;font-weight:900;color:var(--ink);letter-spacing:.2px}
+.teamCard2Title{display:inline-block;background:var(--paper);color:var(--blue);font-size:10.5px;font-weight:800;
+  letter-spacing:.3px;padding:5px 12px;border-radius:20px}
+.teamCard2Leader .teamCard2Title{background:#fdf1cf;color:#9a6f00}
+.teamCard2Stat{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.2px}
+.teamCard2Stat svg{width:14px;height:14px;flex:none}
+.teamCard2Divider{width:60%;height:1px;background:var(--line);margin:2px 0}
+.teamCard2Quote{font-size:12px;font-style:italic;color:var(--muted);line-height:1.5;margin:0}
+.teamCard2Socials{display:flex;gap:8px;margin-top:auto;padding-top:8px}
+.teamCard2Socials a{width:28px;height:28px;border-radius:50%;background:var(--paper);color:var(--blue);
+  display:flex;align-items:center;justify-content:center;transition:background .2s ease,color .2s ease}
+.teamCard2Socials a:hover{background:var(--blue);color:#fff}
+.teamCard2Socials svg{width:13px;height:13px}
 
 .pub{background:#fff;border:1px solid var(--line);border-top:3px solid var(--blue);border-radius:12px;padding:20px;display:block}
 .pub:hover{transform:translateY(-3px);box-shadow:0 18px 38px rgba(7,31,52,.06)}
