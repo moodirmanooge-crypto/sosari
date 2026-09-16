@@ -1,4 +1,5 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { useEffect } from "react";
 import { AdminAuthProvider } from "./contexts/AdminAuthContext";
 import { NavigationProvider } from "./contexts/NavigationContext";
 import Navbar from "./components/Navbar";
@@ -23,6 +24,18 @@ import AdminPartners from "./admin/AdminPartners";
 import AdminNavigation from "./admin/AdminNavigation";
 import ProtectedRoute from "./components/ProtectedRoute";
 
+// React Router does not reset scroll position on navigation by default.
+// Without this, clicking a link while scrolled down (e.g. a footer link)
+// loads the new page underneath the current scroll position, so it looks
+// like nothing happened until the person manually scrolls back up.
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+  return null;
+}
+
 function PublicLayout({ children }) {
   return (
     <>
@@ -38,6 +51,7 @@ export default function App() {
     <BrowserRouter>
       <AdminAuthProvider>
         <NavigationProvider>
+        <ScrollToTop />
         <Routes>
           {/* Admin routes (no public navbar/footer) */}
           <Route path="/admin/login" element={<AdminLogin />} />
