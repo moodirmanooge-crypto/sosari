@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { doc, getDoc } from "firebase/firestore";
@@ -30,43 +30,112 @@ const DEFAULT_HERO = {
     "SOSARI is an independent Somali-led institution for research, statistics, data, policy advisory and evaluation—connecting rigorous evidence with practical decisions across Somalia and the Horn of Africa.",
 };
 
+// The last hero text/photos fetched from Firestore are kept in the browser,
+// so on every visit after the first the hero paints instantly with the
+// real content instead of waiting for the network. (index.html reads the
+// same key to start downloading the first photo before the app JS loads.)
+const HERO_CACHE_KEY = "sosari_home_hero_v1";
+
+function readHeroCache() {
+  try {
+    const c = JSON.parse(localStorage.getItem(HERO_CACHE_KEY) || "null");
+    if (c && c.hero && Array.isArray(c.photos) && c.photos.length > 0) return c;
+  } catch {
+    /* storage unavailable — fall back to defaults */
+  }
+  return null;
+}
+
+function writeHeroCache(hero, photos) {
+  try {
+    localStorage.setItem(HERO_CACHE_KEY, JSON.stringify({ hero, photos }));
+  } catch {
+    /* ignore */
+  }
+}
+
+// Resolves once the browser has the image downloaded (or failed), so a
+// photo is only swapped in when it can appear immediately — never a blank frame.
+function preloadImage(src) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.decoding = "async";
+    img.onload = () => resolve(true);
+    img.onerror = () => resolve(false);
+    img.src = src;
+  });
+}
+
+const INITIAL_CACHE = typeof window !== "undefined" ? readHeroCache() : null;
+
 export default function Home() {
-  const [hero, setHero] = useState(DEFAULT_HERO);
-  const [heroPhotos, setHeroPhotos] = useState(DEFAULT_HERO_PHOTOS);
+  const [hero, setHero] = useState(INITIAL_CACHE?.hero || DEFAULT_HERO);
+  const [heroPhotos, setHeroPhotos] = useState(INITIAL_CACHE?.photos || DEFAULT_HERO_PHOTOS);
   const [featured, setFeatured] = useState([]);
   const [loading, setLoading] = useState(true);
   const [heroSlide, setHeroSlide] = useState(0);
+  const heroPhotosRef = useRef(heroPhotos);
+  heroPhotosRef.current = heroPhotos;
 
   useEffect(() => {
+    // Download the remaining slides in the background so each one is ready
+    // the moment the slider reaches it.
+    heroPhotos.slice(1).forEach((src) => preloadImage(src));
     const id = setInterval(() => {
       setHeroSlide((i) => (i + 1) % heroPhotos.length);
     }, HERO_SLIDE_MS);
     return () => clearInterval(id);
-  }, [heroPhotos.length]);
+  }, [heroPhotos]);
 
   useEffect(() => {
     let mounted = true;
-    async function load() {
+
+    // Hero settings and featured items are independent — fetch them in
+    // parallel so neither waits on the other.
+    async function loadHero() {
       try {
         const snap = await getDoc(doc(db, "siteSettings", "home"));
-        if (mounted && snap.exists()) {
-          const data = snap.data();
-          setHero({
-            eyebrow: data.heroEyebrow || DEFAULT_HERO.eyebrow,
-            title: data.heroTitle || DEFAULT_HERO.title,
-            text: data.heroText || DEFAULT_HERO.text,
-          });
-          if (Array.isArray(data.heroPhotos) && data.heroPhotos.length > 0) {
-            // Firestore stores each hero photo as {url, path}; the built-in
-            // defaults are plain string URLs — normalise to plain strings
-            // either way, since that's what the <img src> below expects.
-            setHeroPhotos(data.heroPhotos.map((p) => (typeof p === "string" ? p : p.url)));
+        if (!mounted || !snap.exists()) return;
+        const data = snap.data();
+        const nextHero = {
+          eyebrow: data.heroEyebrow || DEFAULT_HERO.eyebrow,
+          title: data.heroTitle || DEFAULT_HERO.title,
+          text: data.heroText || DEFAULT_HERO.text,
+        };
+        setHero(nextHero);
+
+        let nextPhotos = null;
+        if (Array.isArray(data.heroPhotos) && data.heroPhotos.length > 0) {
+          // Firestore stores each hero photo as {url, path}; the built-in
+          // defaults are plain string URLs — normalise to plain strings
+          // either way, since that's what the <img src> below expects.
+          nextPhotos = data.heroPhotos.map((p) => (typeof p === "string" ? p : p.url)).filter(Boolean);
+        }
+
+        if (nextPhotos && nextPhotos.length > 0) {
+          writeHeroCache(nextHero, nextPhotos);
+          if (heroPhotosRef.current.join("|") !== nextPhotos.join("|")) {
+            // Different photos from the admin panel: wait until the first one
+            // is downloaded, then swap — the current photo stays visible meanwhile.
+            await preloadImage(nextPhotos[0]);
+            if (!mounted) return;
+            setHeroPhotos(nextPhotos);
+            setHeroSlide(0);
+          }
+        } else {
+          // Admin is using the built-in photos: clear any old cached photos.
+          try { localStorage.removeItem(HERO_CACHE_KEY); } catch { /* ignore */ }
+          if (heroPhotosRef.current !== DEFAULT_HERO_PHOTOS) {
+            setHeroPhotos(DEFAULT_HERO_PHOTOS);
             setHeroSlide(0);
           }
         }
       } catch (e) {
         console.error(e);
       }
+    }
+
+    async function loadFeatured() {
       try {
         const items = await fetchFeaturedHome();
         if (mounted) setFeatured(items.slice(0, 6));
@@ -75,7 +144,9 @@ export default function Home() {
       }
       if (mounted) setLoading(false);
     }
-    load();
+
+    loadHero();
+    loadFeatured();
     return () => { mounted = false; };
   }, []);
 
@@ -86,30 +157,36 @@ export default function Home() {
       <header className="hero heroV2">
         <div className="heroV2-in">
           <div className="heroV2-left">
+            {/* Hero text renders immediately — no scroll/fade-in delay. */}
             <span className="heroBadge"><IconChart /> {hero.eyebrow}</span>
 
-            <Reveal as="h1">
+            <h1>
               {lead}
               {accent && <span className="accent">{accent}</span>}
-            </Reveal>
-            <Reveal as="p" delay={0.08}>{hero.text}</Reveal>
-            <RevealGroup className="actions" stagger={0.06}>
-              <RevealItem><Link className="btn gold" to="/our-work">Explore Our Work →</Link></RevealItem>
-              <RevealItem><Link className="btn playOutline" to="#"><span className="playCircle">▶</span> Watch Video</Link></RevealItem>
-            </RevealGroup>
+            </h1>
+            <p>{hero.text}</p>
+            <div className="actions">
+              <div><Link className="btn gold" to="/our-work">Explore Our Work →</Link></div>
+              <div><Link className="btn playOutline" to="#"><span className="playCircle">▶</span> Watch Video</Link></div>
+            </div>
 
             <span className="heroCursive">A Stronger Tomorrow</span>
           </div>
 
-          <Reveal as="div" className="heroV2-right" delay={0.15} y={20}>
+          <div className="heroV2-right">
             <div className="heroPhotoContainer">
               <div className="heroPhotoFrame">
-                <AnimatePresence mode="popLayout" custom={1}>
+                {/* initial={false}: the first photo appears instantly; only
+                    later slide changes use the slide animation. */}
+                <AnimatePresence mode="popLayout" custom={1} initial={false}>
                   <motion.img
                     key={heroPhotos[heroSlide]}
                     src={heroPhotos[heroSlide]}
                     alt="SOSARI team at work"
                     className="heroPhotoImg"
+                    loading="eager"
+                    decoding="async"
+                    fetchPriority={heroSlide === 0 ? "high" : "auto"}
                     custom={1}
                     initial={{ x: 60, opacity: 0 }}
                     animate={{ x: 0, opacity: 1 }}
@@ -119,35 +196,35 @@ export default function Home() {
                 </AnimatePresence>
               </div>
             </div>
-          </Reveal>
+          </div>
         </div>
 
-        <RevealGroup className="floatRow" stagger={0.08}>
-          <RevealItem className="floatCardWrap">
+        <div className="floatRow">
+          <div className="floatCardWrap">
             <Link to="/section/research" className="floatCard2 fc-green">
               <span className="fc-icon"><IconDoc /></span>
               <span className="fc-text"><b>Research Insights</b>Evidence for policy and development</span>
             </Link>
-          </RevealItem>
-          <RevealItem className="floatCardWrap">
+          </div>
+          <div className="floatCardWrap">
             <Link to="/section/data" className="floatCard2 fc-cyan">
               <span className="fc-icon"><IconBulb /></span>
               <span className="fc-text"><b>Reliable Statistics</b>Trusted data, better decisions</span>
             </Link>
-          </RevealItem>
-          <RevealItem className="floatCardWrap">
+          </div>
+          <div className="floatCardWrap">
             <Link to="/section/policies" className="floatCard2 fc-purple">
               <span className="fc-icon"><IconUsers /></span>
               <span className="fc-text"><b>Policy Solutions</b>Research that creates real change</span>
             </Link>
-          </RevealItem>
-          <RevealItem className="floatCardWrap">
+          </div>
+          <div className="floatCardWrap">
             <Link to="/section/evaluations" className="floatCard2 fc-gold">
               <span className="fc-icon"><IconGlobe /></span>
               <span className="fc-text"><b>Real Impact</b>For people, communities and a stronger Somalia</span>
             </Link>
-          </RevealItem>
-        </RevealGroup>
+          </div>
+        </div>
       </header>
 
       <Reveal as="div" className="strip stripCenter">

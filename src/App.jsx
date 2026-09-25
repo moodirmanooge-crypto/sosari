@@ -1,29 +1,42 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
-import { useEffect } from "react";
+import { Suspense, lazy, useEffect } from "react";
 import { AdminAuthProvider } from "./contexts/AdminAuthContext";
 import { NavigationProvider } from "./contexts/NavigationContext";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
+import Loader from "./components/Loader";
+// Home is loaded right away (it's the first page most visitors see).
 import Home from "./pages/Home";
-import OurWork from "./pages/OurWork";
-import SectionLanding from "./pages/SectionLanding";
-import SectionPage from "./pages/SectionPage";
-import ArticlePage from "./pages/ArticlePage";
-import PartnerPage from "./pages/PartnerPage";
-import NotFound from "./pages/NotFound";
-
-import AdminLogin from "./admin/AdminLogin";
-import AdminLayout from "./admin/AdminLayout";
-import AdminDashboard from "./admin/AdminDashboard";
-import AdminSectionManager from "./admin/AdminSectionManager";
-import AdminHomeSettings from "./admin/AdminHomeSettings";
-import AdminOurWork from "./admin/AdminOurWork";
-import AdminTeam from "./admin/AdminTeam";
-import AdminMessages from "./admin/AdminMessages";
-import AdminSettings from "./admin/AdminSettings";
-import AdminPartners from "./admin/AdminPartners";
-import AdminNavigation from "./admin/AdminNavigation";
 import ProtectedRoute from "./components/ProtectedRoute";
+
+// Every other page — and the whole admin panel — is split into its own
+// small file that downloads only when it's opened. This keeps the first
+// download for the home page much smaller, so the hero appears faster on
+// both laptop and mobile.
+const OurWork = lazy(() => import("./pages/OurWork"));
+const SectionLanding = lazy(() => import("./pages/SectionLanding"));
+const SectionPage = lazy(() => import("./pages/SectionPage"));
+const ArticlePage = lazy(() => import("./pages/ArticlePage"));
+const PartnerPage = lazy(() => import("./pages/PartnerPage"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+
+const AdminLogin = lazy(() => import("./admin/AdminLogin"));
+const AdminLayout = lazy(() => import("./admin/AdminLayout"));
+const AdminDashboard = lazy(() => import("./admin/AdminDashboard"));
+const AdminSectionManager = lazy(() => import("./admin/AdminSectionManager"));
+const AdminHomeSettings = lazy(() => import("./admin/AdminHomeSettings"));
+const AdminOurWork = lazy(() => import("./admin/AdminOurWork"));
+const AdminTeam = lazy(() => import("./admin/AdminTeam"));
+const AdminMessages = lazy(() => import("./admin/AdminMessages"));
+const AdminSettings = lazy(() => import("./admin/AdminSettings"));
+const AdminPartners = lazy(() => import("./admin/AdminPartners"));
+const AdminNavigation = lazy(() => import("./admin/AdminNavigation"));
+
+// Shows a small spinner in place of a page while its file downloads
+// (only the first time that page is opened).
+function Lazy({ children, full = false }) {
+  return <Suspense fallback={<Loader full={full} />}>{children}</Suspense>;
+}
 
 // React Router does not reset scroll position on navigation by default.
 // Without this, clicking a link while scrolled down (e.g. a footer link)
@@ -41,7 +54,7 @@ function PublicLayout({ children }) {
   return (
     <>
       <Navbar />
-      {children}
+      <Lazy>{children}</Lazy>
       <Footer />
     </>
   );
@@ -55,7 +68,7 @@ export default function App() {
         <ScrollToTop />
         <Routes>
           {/* Admin routes (no public navbar/footer) */}
-          <Route path="/admin/login" element={<AdminLogin />} />
+          <Route path="/admin/login" element={<Lazy full><AdminLogin /></Lazy>} />
           {/* Friendly aliases in case the URL is typed with a dash or without /login */}
           <Route path="/admin-login" element={<Navigate to="/admin/login" replace />} />
           <Route path="/login" element={<Navigate to="/admin/login" replace />} />
@@ -63,19 +76,19 @@ export default function App() {
             path="/admin"
             element={
               <ProtectedRoute>
-                <AdminLayout />
+                <Lazy full><AdminLayout /></Lazy>
               </ProtectedRoute>
             }
           >
-            <Route index element={<AdminDashboard />} />
-            <Route path="home-settings" element={<AdminHomeSettings />} />
-            <Route path="our-work" element={<AdminOurWork />} />
-            <Route path="team" element={<AdminTeam />} />
-            <Route path="partners" element={<AdminPartners />} />
-            <Route path="navigation" element={<AdminNavigation />} />
-            <Route path="messages" element={<AdminMessages />} />
-            <Route path="settings" element={<AdminSettings />} />
-            <Route path="section/:parent/:child" element={<AdminSectionManager />} />
+            <Route index element={<Lazy><AdminDashboard /></Lazy>} />
+            <Route path="home-settings" element={<Lazy><AdminHomeSettings /></Lazy>} />
+            <Route path="our-work" element={<Lazy><AdminOurWork /></Lazy>} />
+            <Route path="team" element={<Lazy><AdminTeam /></Lazy>} />
+            <Route path="partners" element={<Lazy><AdminPartners /></Lazy>} />
+            <Route path="navigation" element={<Lazy><AdminNavigation /></Lazy>} />
+            <Route path="messages" element={<Lazy><AdminMessages /></Lazy>} />
+            <Route path="settings" element={<Lazy><AdminSettings /></Lazy>} />
+            <Route path="section/:parent/:child" element={<Lazy><AdminSectionManager /></Lazy>} />
           </Route>
 
           {/* Public site */}

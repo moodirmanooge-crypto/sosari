@@ -2,9 +2,46 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/png" href="/favicon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- SOSARI logo icons (browser tab, Google results, phone home-screen/shortcuts) -->
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/android-chrome-192x192.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <meta name="theme-color" content="#0a2036" />
+    <meta name="application-name" content="SOSARI" />
+    <meta name="apple-mobile-web-app-title" content="SOSARI" />
+
     <meta name="description" content="SOSARI — Somali Statistics and Research Institute. Independent research, statistics, data, policy advisory and evaluation for Somalia and the Horn of Africa." />
+    <meta property="og:site_name" content="SOSARI" />
+    <meta property="og:title" content="SOSARI — Somali Statistics and Research Institute" />
+    <meta property="og:description" content="Independent research, statistics, data, policy advisory and evaluation for Somalia and the Horn of Africa." />
+    <meta property="og:image" content="/android-chrome-512x512.png" />
+    <meta property="og:type" content="website" />
+
+    <!-- Open the connections to Firebase early so hero text/photos arrive faster -->
+    <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin />
+    <link rel="preconnect" href="https://firebasestorage.googleapis.com" crossorigin />
+    <link rel="dns-prefetch" href="https://firestore.googleapis.com" />
+    <link rel="dns-prefetch" href="https://firebasestorage.googleapis.com" />
+
+    <!-- Returning visitors: start downloading the saved hero photo before the app JS even loads -->
+    <script>
+      try {
+        var c = JSON.parse(localStorage.getItem("sosari_home_hero_v1") || "null");
+        if (c && c.photos && c.photos[0] && location.pathname === "/") {
+          var l = document.createElement("link");
+          l.rel = "preload"; l.as = "image"; l.href = c.photos[0];
+          l.setAttribute("fetchpriority", "high");
+          document.head.appendChild(l);
+        }
+      } catch (e) {}
+    </script>
+
     <title>SOSARI — Somali Statistics and Research Institute</title>
   </head>
   <body>
