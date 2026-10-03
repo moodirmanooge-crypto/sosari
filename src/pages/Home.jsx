@@ -110,13 +110,16 @@ function HeroText3D({ as = "div", parts, delay = 0, className }) {
   const Tag = motion[as] || motion.div;
 
   let count = 0;
-  const renderWords = (ws) =>
+  // wordClass: the coloured part (e.g. the orange "accent") puts its class on
+  // every word too, so each moving word paints its own colour/gradient and
+  // never disappears while it animates.
+  const renderWords = (ws, wordClass) =>
     ws.map((w, i) => {
       count += 1;
       const isLast = count === total;
       return (
         <span key={i}>
-          <motion.span variants={WORD_VARIANTS} style={WORD_STYLE}>{w}</motion.span>
+          <motion.span variants={WORD_VARIANTS} className={wordClass} style={WORD_STYLE}>{w}</motion.span>
           {!isLast && " "}
         </span>
       );
@@ -131,7 +134,7 @@ function HeroText3D({ as = "div", parts, delay = 0, className }) {
     >
       {groups.map((p, i) =>
         p.className ? (
-          <span key={i} className={p.className}>{renderWords(p.words)}</span>
+          <span key={i} className={p.className}>{renderWords(p.words, p.className)}</span>
         ) : (
           <span key={i}>{renderWords(p.words)}</span>
         )
