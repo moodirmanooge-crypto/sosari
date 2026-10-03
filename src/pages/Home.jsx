@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase";
 import { fetchFeaturedHome } from "../utils/content";
@@ -67,6 +67,78 @@ function preloadImage(src) {
 }
 
 const INITIAL_CACHE = typeof window !== "undefined" ? readHeroCache() : null;
+
+/* ------------------------------------------------------------------
+   Hero 3D text animation (used only for the hero title and hero text)
+   Every word slides up and flips in on the X axis, one after another,
+   as soon as the page opens. Same motion on laptop and mobile: words
+   wrap naturally to any width and each word carries its own perspective.
+------------------------------------------------------------------- */
+const EASE_3D = [0.22, 1, 0.36, 1];
+
+const WORD_VARIANTS = {
+  hidden: { opacity: 0, y: "0.7em", rotateX: -85 },
+  show: { opacity: 1, y: 0, rotateX: 0, transition: { duration: 0.8, ease: EASE_3D } },
+};
+
+const WORD_STYLE = {
+  display: "inline-block",
+  transformOrigin: "50% 100%",
+  transformPerspective: 700,
+  backfaceVisibility: "hidden",
+  willChange: "transform, opacity",
+};
+
+function HeroText3D({ as = "div", parts, delay = 0, className }) {
+  const reduce = useReducedMotion();
+  const list = parts
+    .map((p) => (typeof p === "string" ? { text: p } : p))
+    .filter((p) => p && p.text);
+
+  if (reduce) {
+    const Plain = as;
+    return (
+      <Plain className={className}>
+        {list.map((p, i) => (p.className ? <span key={i} className={p.className}>{p.text}</span> : p.text))}
+      </Plain>
+    );
+  }
+
+  const groups = list.map((p) => ({ ...p, words: p.text.split(/\s+/).filter(Boolean) }));
+  const total = groups.reduce((n, p) => n + p.words.length, 0) || 1;
+  const stagger = Math.min(0.07, 1.1 / total);
+  const Tag = motion[as] || motion.div;
+
+  let count = 0;
+  const renderWords = (ws) =>
+    ws.map((w, i) => {
+      count += 1;
+      const isLast = count === total;
+      return (
+        <span key={i}>
+          <motion.span variants={WORD_VARIANTS} style={WORD_STYLE}>{w}</motion.span>
+          {!isLast && " "}
+        </span>
+      );
+    });
+
+  return (
+    <Tag
+      className={className}
+      initial="hidden"
+      animate="show"
+      variants={{ hidden: {}, show: { transition: { staggerChildren: stagger, delayChildren: delay } } }}
+    >
+      {groups.map((p, i) =>
+        p.className ? (
+          <span key={i} className={p.className}>{renderWords(p.words)}</span>
+        ) : (
+          <span key={i}>{renderWords(p.words)}</span>
+        )
+      )}
+    </Tag>
+  );
+}
 
 export default function Home() {
   const [hero, setHero] = useState(INITIAL_CACHE?.hero || DEFAULT_HERO);
@@ -160,11 +232,13 @@ export default function Home() {
             {/* Hero text renders immediately — no scroll/fade-in delay. */}
             <span className="heroBadge"><IconChart /> {hero.eyebrow}</span>
 
-            <h1>
-              {lead}
-              {accent && <span className="accent">{accent}</span>}
-            </h1>
-            <p>{hero.text}</p>
+            <HeroText3D
+              as="h1"
+              key={`t-${hero.title}`}
+              delay={0.1}
+              parts={[lead, accent && { text: accent, className: "accent" }]}
+            />
+            <HeroText3D as="p" key={`p-${hero.text}`} delay={0.6} parts={[hero.text]} />
             <div className="actions">
               <div><Link className="btn gold" to="/our-work">Explore Our Work →</Link></div>
               <div><Link className="btn playOutline" to="#"><span className="playCircle">▶</span> Watch Video</Link></div>
