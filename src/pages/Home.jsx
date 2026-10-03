@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase";
 import { fetchFeaturedHome } from "../utils/content";
@@ -67,106 +67,6 @@ function preloadImage(src) {
 }
 
 const INITIAL_CACHE = typeof window !== "undefined" ? readHeroCache() : null;
-
-/* ------------------------------------------------------------------
-   3D text animation
-   Every word slides up and flips in on the X axis (3D), one after the
-   other. Same timing and motion on laptop and mobile: words wrap
-   naturally to any screen width, and each word carries its own
-   perspective so the 3D effect is identical everywhere.
-   inView=false → plays on page load (hero); inView=true → plays once
-   when the text scrolls onto the screen.
-------------------------------------------------------------------- */
-const EASE_3D = [0.22, 1, 0.36, 1];
-
-const WORD_VARIANTS = {
-  hidden: { opacity: 0, y: "0.7em", rotateX: -85 },
-  show: { opacity: 1, y: 0, rotateX: 0, transition: { duration: 0.8, ease: EASE_3D } },
-};
-
-const WORD_STYLE = {
-  display: "inline-block",
-  transformOrigin: "50% 100%",
-  transformPerspective: 700,
-  backfaceVisibility: "hidden",
-  willChange: "transform, opacity",
-};
-
-const VIEWPORT_3D = { once: true, amount: 0.2, margin: "0px 0px -8% 0px" };
-
-function Text3D({ as = "div", text, parts, className, delay = 0, inView = true, style }) {
-  const reduce = useReducedMotion();
-  const list = (parts || [text])
-    .map((p) => (typeof p === "string" ? { text: p } : p))
-    .filter((p) => p && p.text);
-
-  if (reduce) {
-    const Plain = as;
-    return (
-      <Plain className={className} style={style}>
-        {list.map((p, i) => (p.className ? <span key={i} className={p.className}>{p.text}</span> : p.text))}
-      </Plain>
-    );
-  }
-
-  const words = list.map((p) => ({ ...p, words: p.text.split(/\s+/).filter(Boolean) }));
-  const total = words.reduce((n, p) => n + p.words.length, 0) || 1;
-  const stagger = Math.min(0.07, 1.1 / total);
-  const Tag = motion[as] || motion.div;
-  const play = inView ? { whileInView: "show", viewport: VIEWPORT_3D } : { animate: "show" };
-
-  let count = 0;
-  const renderWords = (ws) =>
-    ws.map((w, i) => {
-      count += 1;
-      const isLast = count === total;
-      return (
-        <span key={i}>
-          <motion.span variants={WORD_VARIANTS} style={WORD_STYLE}>{w}</motion.span>
-          {!isLast && " "}
-        </span>
-      );
-    });
-
-  return (
-    <Tag
-      className={className}
-      style={style}
-      initial="hidden"
-      {...play}
-      variants={{ hidden: {}, show: { transition: { staggerChildren: stagger, delayChildren: delay } } }}
-    >
-      {words.map((p, i) =>
-        p.className ? (
-          <span key={i} className={p.className}>{renderWords(p.words)}</span>
-        ) : (
-          <span key={i}>{renderWords(p.words)}</span>
-        )
-      )}
-    </Tag>
-  );
-}
-
-// A whole block (badge, button) that flips in with the same 3D motion.
-function Block3D({ as = "div", delay = 0, className, children, style }) {
-  const reduce = useReducedMotion();
-  if (reduce) {
-    const Plain = as;
-    return <Plain className={className} style={style}>{children}</Plain>;
-  }
-  const Tag = motion[as] || motion.div;
-  return (
-    <Tag
-      className={className}
-      style={{ transformOrigin: "50% 100%", transformPerspective: 700, ...style }}
-      initial={{ opacity: 0, y: 24, rotateX: -70 }}
-      animate={{ opacity: 1, y: 0, rotateX: 0 }}
-      transition={{ duration: 0.85, delay, ease: EASE_3D }}
-    >
-      {children}
-    </Tag>
-  );
-}
 
 export default function Home() {
   const [hero, setHero] = useState(INITIAL_CACHE?.hero || DEFAULT_HERO);
@@ -257,25 +157,20 @@ export default function Home() {
       <header className="hero heroV2">
         <div className="heroV2-in">
           <div className="heroV2-left">
-            {/* Hero text plays its 3D animation as soon as the page opens. */}
-            <Block3D as="span" className="heroBadge" key={`b-${hero.eyebrow}`}>
-              <IconChart /> {hero.eyebrow}
-            </Block3D>
+            {/* Hero text renders immediately — no scroll/fade-in delay. */}
+            <span className="heroBadge"><IconChart /> {hero.eyebrow}</span>
 
-            <Text3D
-              as="h1"
-              key={`t-${hero.title}`}
-              inView={false}
-              delay={0.15}
-              parts={[lead, accent && { text: accent, className: "accent" }]}
-            />
-            <Text3D as="p" key={`p-${hero.text}`} inView={false} delay={0.55} text={hero.text} />
+            <h1>
+              {lead}
+              {accent && <span className="accent">{accent}</span>}
+            </h1>
+            <p>{hero.text}</p>
             <div className="actions">
-              <Block3D delay={1.05}><Link className="btn gold" to="/our-work">Explore Our Work →</Link></Block3D>
-              <Block3D delay={1.2}><Link className="btn playOutline" to="#"><span className="playCircle">▶</span> Watch Video</Link></Block3D>
+              <div><Link className="btn gold" to="/our-work">Explore Our Work →</Link></div>
+              <div><Link className="btn playOutline" to="#"><span className="playCircle">▶</span> Watch Video</Link></div>
             </div>
 
-            <Text3D as="span" className="heroCursive" inView={false} delay={1.35} text="A Stronger Tomorrow" />
+            <span className="heroCursive">A Stronger Tomorrow</span>
           </div>
 
           <div className="heroV2-right">
@@ -308,25 +203,25 @@ export default function Home() {
           <div className="floatCardWrap">
             <Link to="/section/research" className="floatCard2 fc-green">
               <span className="fc-icon"><IconDoc /></span>
-              <span className="fc-text"><Text3D as="b" text="Research Insights" /><Text3D as="span" delay={0.15} text="Evidence for policy and development" /></span>
+              <span className="fc-text"><b>Research Insights</b>Evidence for policy and development</span>
             </Link>
           </div>
           <div className="floatCardWrap">
             <Link to="/section/data" className="floatCard2 fc-cyan">
               <span className="fc-icon"><IconBulb /></span>
-              <span className="fc-text"><Text3D as="b" delay={0.1} text="Reliable Statistics" /><Text3D as="span" delay={0.25} text="Trusted data, better decisions" /></span>
+              <span className="fc-text"><b>Reliable Statistics</b>Trusted data, better decisions</span>
             </Link>
           </div>
           <div className="floatCardWrap">
             <Link to="/section/policies" className="floatCard2 fc-purple">
               <span className="fc-icon"><IconUsers /></span>
-              <span className="fc-text"><Text3D as="b" delay={0.2} text="Policy Solutions" /><Text3D as="span" delay={0.35} text="Research that creates real change" /></span>
+              <span className="fc-text"><b>Policy Solutions</b>Research that creates real change</span>
             </Link>
           </div>
           <div className="floatCardWrap">
             <Link to="/section/evaluations" className="floatCard2 fc-gold">
               <span className="fc-icon"><IconGlobe /></span>
-              <span className="fc-text"><Text3D as="b" delay={0.3} text="Real Impact" /><Text3D as="span" delay={0.45} text="For people, communities and a stronger Somalia" /></span>
+              <span className="fc-text"><b>Real Impact</b>For people, communities and a stronger Somalia</span>
             </Link>
           </div>
         </div>
@@ -334,50 +229,48 @@ export default function Home() {
 
       <Reveal as="div" className="strip stripCenter">
         <span className="stripLine" />
-        <Text3D as="span" className="stripWords" text="STATISTICS • RESEARCH • POLICY • DEVELOPMENT" style={{ wordSpacing: "0.35em" }} />
+        <span className="stripWords">STATISTICS &nbsp;•&nbsp; RESEARCH &nbsp;•&nbsp; POLICY &nbsp;•&nbsp; DEVELOPMENT</span>
         <span className="stripLine" />
       </Reveal>
 
       <section>
         <div className="wrap">
-          <Text3D className="eyebrow2" text="What SOSARI does" />
-          <Text3D as="h2" delay={0.1} text="A complete evidence-to-impact institution." />
-          <Text3D
-            as="p"
-            delay={0.25}
-            className="lead"
-            text="SOSARI connects research, data, policy, advisory and evaluation into a single, coherent institution — not a list of stand-alone services."
-          />
+          <Reveal className="eyebrow2">What SOSARI does</Reveal>
+          <Reveal as="h2" delay={0.05}>A complete evidence-to-impact institution.</Reveal>
+          <Reveal as="p" delay={0.1} className="lead">
+            SOSARI connects research, data, policy, advisory and evaluation into a single, coherent
+            institution — not a list of stand-alone services.
+          </Reveal>
           <RevealGroup className="cards" stagger={0.08}>
             <RevealItem>
               <TiltCard className="card">
-                <Text3D className="num" text="01 / RESEARCH" />
-                <Text3D as="h3" delay={0.1} text="Research & Evidence" />
-                <Text3D as="p" delay={0.2} text="Applied and policy research designed around Somalia's priority questions and real-world decisions." />
+                <div className="num">01 / RESEARCH</div>
+                <h3>Research & Evidence</h3>
+                <p>Applied and policy research designed around Somalia's priority questions and real-world decisions.</p>
                 <Link className="link" to="/section/research">Research agenda →</Link>
               </TiltCard>
             </RevealItem>
             <RevealItem>
               <TiltCard className="card">
-                <Text3D className="num" text="02 / DATA" />
-                <Text3D as="h3" delay={0.1} text="Statistics & Data" />
-                <Text3D as="p" delay={0.2} text="Survey design, field research, digital data systems, statistical analysis, data science and GIS." />
+                <div className="num">02 / DATA</div>
+                <h3>Statistics & Data</h3>
+                <p>Survey design, field research, digital data systems, statistical analysis, data science and GIS.</p>
                 <Link className="link" to="/section/data">Data services →</Link>
               </TiltCard>
             </RevealItem>
             <RevealItem>
               <TiltCard className="card">
-                <Text3D className="num" text="03 / POLICY" />
-                <Text3D as="h3" delay={0.1} text="Policy & Advisory" />
-                <Text3D as="p" delay={0.2} text="Policy analysis, strategic advisory, institutional development, programme design and technical assistance." />
+                <div className="num">03 / POLICY</div>
+                <h3>Policy & Advisory</h3>
+                <p>Policy analysis, strategic advisory, institutional development, programme design and technical assistance.</p>
                 <Link className="link" to="/section/policies">Policy & advisory →</Link>
               </TiltCard>
             </RevealItem>
             <RevealItem>
               <TiltCard className="card">
-                <Text3D className="num" text="04 / EVALUATION" />
-                <Text3D as="h3" delay={0.1} text="MEAL & Evaluation" />
-                <Text3D as="p" delay={0.2} text="Baseline, midterm, endline, impact evaluation, third-party monitoring and learning." />
+                <div className="num">04 / EVALUATION</div>
+                <h3>MEAL & Evaluation</h3>
+                <p>Baseline, midterm, endline, impact evaluation, third-party monitoring and learning.</p>
                 <Link className="link" to="/section/evaluations">Evaluation →</Link>
               </TiltCard>
             </RevealItem>
@@ -387,48 +280,47 @@ export default function Home() {
 
       <section className="dark">
         <div className="wrap">
-          <Text3D className="eyebrow2" text="Research agenda" />
-          <Text3D as="h2" delay={0.1} text="Thematic Research Areas" />
-          <Text3D
-            as="p"
-            delay={0.25}
-            className="lead"
-            text="SOSARI's research and consultancy activities address key development, governance, and socio-economic challenges across multiple sectors, generating high-quality evidence that informs decision-making, policy development, and programme design."
-          />
+          <Reveal className="eyebrow2">Research agenda</Reveal>
+          <Reveal as="h2" delay={0.05}>Thematic Research Areas</Reveal>
+          <Reveal as="p" delay={0.1} className="lead">
+            SOSARI's research and consultancy activities address key development, governance, and
+            socio-economic challenges across multiple sectors, generating high-quality evidence
+            that informs decision-making, policy development, and programme design.
+          </Reveal>
           <RevealGroup className="themes" stagger={0.07}>
-            <RevealItem><TiltCard className="theme"><Text3D as="b" text="Human Development" /><Text3D as="p" delay={0.15} text="Health • Nutrition • Education • Population • Gender & Youth" /></TiltCard></RevealItem>
-            <RevealItem><TiltCard className="theme"><Text3D as="b" text="Social Protection & Community Resilience" /><Text3D as="p" delay={0.15} text="Protection Systems • Livelihoods • Displacement • Peacebuilding" /></TiltCard></RevealItem>
-            <RevealItem><TiltCard className="theme"><Text3D as="b" text="Environment & Natural Resources" /><Text3D as="p" delay={0.15} text="WASH • Climate Adaptation • Natural Resource Management" /></TiltCard></RevealItem>
-            <RevealItem><TiltCard className="theme"><Text3D as="b" text="Governance & Public Policy" /><Text3D as="p" delay={0.15} text="Institutions • Service Delivery • Accountability • Rule of Law" /></TiltCard></RevealItem>
-            <RevealItem><TiltCard className="theme"><Text3D as="b" text="Economic Development" /><Text3D as="p" delay={0.15} text="Private Sector • Enterprise • Markets • Employment" /></TiltCard></RevealItem>
+            <RevealItem><TiltCard className="theme"><b>Human Development</b><p>Health • Nutrition • Education • Population • Gender & Youth</p></TiltCard></RevealItem>
+            <RevealItem><TiltCard className="theme"><b>Social Protection & Community Resilience</b><p>Protection Systems • Livelihoods • Displacement • Peacebuilding</p></TiltCard></RevealItem>
+            <RevealItem><TiltCard className="theme"><b>Environment & Natural Resources</b><p>WASH • Climate Adaptation • Natural Resource Management</p></TiltCard></RevealItem>
+            <RevealItem><TiltCard className="theme"><b>Governance & Public Policy</b><p>Institutions • Service Delivery • Accountability • Rule of Law</p></TiltCard></RevealItem>
+            <RevealItem><TiltCard className="theme"><b>Economic Development</b><p>Private Sector • Enterprise • Markets • Employment</p></TiltCard></RevealItem>
           </RevealGroup>
         </div>
       </section>
 
       <section className="process">
         <div className="wrap">
-          <Text3D className="eyebrow2" text="SOSARI evidence cycle" />
-          <Text3D as="h2" delay={0.1} text="From a question to a decision—and from a decision to learning." />
+          <Reveal className="eyebrow2">SOSARI evidence cycle</Reveal>
+          <Reveal as="h2" delay={0.05}>From a question to a decision—and from a decision to learning.</Reveal>
           <RevealGroup className="flow" stagger={0.06}>
-            <RevealItem><div className="step"><Text3D as="b" text="01 · FRAME" /><Text3D as="span" delay={0.12} text="Define the question" /></div></RevealItem>
-            <RevealItem><div className="step"><Text3D as="b" text="02 · MEASURE" /><Text3D as="span" delay={0.12} text="Collect credible data" /></div></RevealItem>
-            <RevealItem><div className="step"><Text3D as="b" text="03 · ANALYSE" /><Text3D as="span" delay={0.12} text="Generate evidence" /></div></RevealItem>
-            <RevealItem><div className="step"><Text3D as="b" text="04 · TRANSLATE" /><Text3D as="span" delay={0.12} text="Inform policy" /></div></RevealItem>
-            <RevealItem><div className="step"><Text3D as="b" text="05 · ACT" /><Text3D as="span" delay={0.12} text="Support decisions" /></div></RevealItem>
-            <RevealItem><div className="step"><Text3D as="b" text="06 · LEARN" /><Text3D as="span" delay={0.12} text="Evaluate & improve" /></div></RevealItem>
+            <RevealItem><div className="step"><b>01 · FRAME</b><span>Define the question</span></div></RevealItem>
+            <RevealItem><div className="step"><b>02 · MEASURE</b><span>Collect credible data</span></div></RevealItem>
+            <RevealItem><div className="step"><b>03 · ANALYSE</b><span>Generate evidence</span></div></RevealItem>
+            <RevealItem><div className="step"><b>04 · TRANSLATE</b><span>Inform policy</span></div></RevealItem>
+            <RevealItem><div className="step"><b>05 · ACT</b><span>Support decisions</span></div></RevealItem>
+            <RevealItem><div className="step"><b>06 · LEARN</b><span>Evaluate & improve</span></div></RevealItem>
           </RevealGroup>
         </div>
       </section>
 
       <section>
         <div className="wrap">
-          <Text3D className="eyebrow2" text="Featured" />
-          <Text3D as="h2" delay={0.1} text="Latest from SOSARI." />
-          <Text3D as="p" delay={0.25} className="lead" text="Recent publications, briefs and updates selected by the SOSARI team." />
+          <Reveal className="eyebrow2">Featured</Reveal>
+          <Reveal as="h2" delay={0.05}>Latest from SOSARI.</Reveal>
+          <Reveal as="p" delay={0.1} className="lead">Recent publications, briefs and updates selected by the SOSARI team.</Reveal>
           {loading ? (
             <Loader />
           ) : featured.length === 0 ? (
-            <Text3D as="p" className="lead" text="No featured content yet — add some from the admin panel." />
+            <Reveal as="p" className="lead">No featured content yet — add some from the admin panel.</Reveal>
           ) : (
             <RevealGroup className="pubs" stagger={0.08}>
               {featured.map((item) => (
@@ -445,9 +337,9 @@ export default function Home() {
         <div className="wrap">
           <Reveal className="ctaBand">
             <div>
-              <Text3D className="eyebrow2" text="Work with SOSARI" />
-              <Text3D as="h2" delay={0.1} text="Have a research, data, policy or evaluation challenge?" />
-              <Text3D as="p" delay={0.3} text="Bring the question. SOSARI can assemble the appropriate methods, expertise and evidence pathway." />
+              <div className="eyebrow2">Work with SOSARI</div>
+              <h2>Have a research, data, policy or evaluation challenge?</h2>
+              <p>Bring the question. SOSARI can assemble the appropriate methods, expertise and evidence pathway.</p>
             </div>
             <div className="actions">
               <Link className="btn" to="/partner">Start a conversation →</Link>
