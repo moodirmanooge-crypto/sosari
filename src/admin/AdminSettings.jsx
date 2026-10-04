@@ -1,11 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  EmailAuthProvider, reauthenticateWithCredential,
-  verifyBeforeUpdateEmail, updatePassword,
-} from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";
-import { auth, db } from "../firebase";
+import { db } from "../firebase";
 import { useAdminAuth } from "../contexts/AdminAuthContext";
 
 // Friendly Somali messages for the Firebase Auth error codes most likely
@@ -34,7 +30,7 @@ function friendlyError(err) {
 }
 
 export default function AdminSettings() {
-  const { user, logout } = useAdminAuth();
+  const { user, logout, changeAdminCredentials } = useAdminAuth();
   const navigate = useNavigate();
 
   const [currentPassword, setCurrentPassword] = useState("");
@@ -81,7 +77,7 @@ export default function AdminSettings() {
     setError("");
     setSuccess("");
 
-    const emailChanged = newEmail.trim() && newEmail.trim() !== user.email;
+    const emailChanged = newEmail.trim() && newEmail.trim() !== (user?.email || "");
     const passwordChanged = newPassword.trim().length > 0;
 
     if (!currentPassword) {
@@ -103,25 +99,15 @@ export default function AdminSettings() {
 
     setSaving(true);
     try {
-      // Firebase requires a recent sign-in before allowing sensitive
-      // changes like email/password — this is exactly the "confirm the
-      // current password first" step.
-      const credential = EmailAuthProvider.credential(user.email, currentPassword);
-      await reauthenticateWithCredential(auth.currentUser, credential);
-
-      if (emailChanged) {
-        // Firebase now requires the new address to be verified before the
-        // change takes effect — it sends a link there instead of switching
-        // immediately. The current login keeps working until they click it.
-        await verifyBeforeUpdateEmail(auth.currentUser, newEmail.trim());
-      }
-      if (passwordChanged) {
-        await updatePassword(auth.currentUser, newPassword);
-        // Keep the Firestore admin record's "password" field in sync so it
-        // always reflects the real, current login password for reference —
-        // this is the ONLY place the password should ever be changed from.
-        await setDoc(doc(db, "sosariAdmin", "admin"), { password: newPassword }, { merge: true });
-      }
+      // Login-ka admin-ku wuxuu ku shaqeeyaa Firestore (sosariAdmin/admin),
+      // ee ma aha Firebase Auth. Password-ka hadda jira waa la hubinayaa,
+      // kadibna email/username iyo password-ka si toos ah ayaa Firestore
+      // loogu badalayaa.
+      await changeAdminCredentials({
+        currentPassword,
+        newEmail: emailChanged ? newEmail.trim() : "",
+        newPassword: passwordChanged ? newPassword : "",
+      });
 
       if (passwordChanged) {
         setSuccess("Password-ka waa la beddelay. Fadlan mar kale soo gal adigoo isticmaalaya password-ka cusub…");
@@ -131,8 +117,9 @@ export default function AdminSettings() {
         }, 1800);
       } else if (emailChanged) {
         setSuccess(
-          `Waxaan email cusub "${newEmail.trim()}" u dirnay link xaqiijin ah. Fur email-kaas oo gujii link-ga si ay email-ku u isbeddesho. Ilaa markaas, wali waxaad ku soo gali kartaa email-kaaga hore.`
+          `Email-ka waa la beddelay. Hadda waxaad ku soo geli doontaa "${newEmail.trim()}".`
         );
+        setCurrentPassword("");
       }
     } catch (err) {
       console.error(err);
