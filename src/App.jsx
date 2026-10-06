@@ -94,6 +94,21 @@ export default function App() {
           {/* Public site */}
           <Route path="/" element={<PublicLayout><Home /></PublicLayout>} />
           <Route path="/our-work" element={<PublicLayout><OurWork /></PublicLayout>} />
+          {/* Old / commonly typed URLs (e.g. sosari.org/services/ from Google
+              or old links) — send them to the right page instead of a 404. */}
+          <Route path="/services" element={<Navigate to="/our-work" replace />} />
+          <Route path="/service" element={<Navigate to="/our-work" replace />} />
+          <Route path="/our-services" element={<Navigate to="/our-work" replace />} />
+          <Route path="/what-we-do" element={<Navigate to="/our-work" replace />} />
+          <Route path="/services/*" element={<Navigate to="/our-work" replace />} />
+          <Route path="/about" element={<Navigate to="/section/about" replace />} />
+          <Route path="/about-us" element={<Navigate to="/section/about" replace />} />
+          <Route path="/research" element={<Navigate to="/section/research" replace />} />
+          <Route path="/publications" element={<Navigate to="/section/knowledge" replace />} />
+          <Route path="/contact" element={<Navigate to="/partner" replace />} />
+          <Route path="/contact-us" element={<Navigate to="/partner" replace />} />
+          <Route path="/partner-with-sosari" element={<Navigate to="/partner" replace />} />
+          <Route path="/work-with-sosari" element={<Navigate to="/partner" replace />} />
           <Route path="/partner" element={<PublicLayout><PartnerPage /></PublicLayout>} />
           <Route path="/article/:id" element={<PublicLayout><ArticlePage /></PublicLayout>} />
           <Route path="/section/:parent" element={<PublicLayout><SectionLanding /></PublicLayout>} />
