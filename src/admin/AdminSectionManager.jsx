@@ -3,10 +3,41 @@ import { useParams } from "react-router-dom";
 import {
   collection, query, where, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp,
 } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
+import { ref, uploadBytes, uploadBytesResumable, getDownloadURL, deleteObject } from "firebase/storage";
 import { db, storage } from "../firebase";
 import { useNavigation } from "../contexts/NavigationContext";
 import { PARTNERS_NETWORKS_CATEGORIES } from "../pages/SectionPage";
+import {
+  DOCUMENT_ACCEPT, MAX_DOCUMENT_BYTES, getItemDocuments, getDocumentLabel, formatBytes, safeFileName,
+} from "../utils/documents";
+
+// Uploads one document (PDF, Word …) to Storage. It's saved with
+// Content-Disposition "attachment" so when a visitor clicks the download
+// button, the browser downloads the file with its original name.
+function uploadDocumentFile(file, sectionKey, onProgress) {
+  const name = safeFileName(file.name);
+  const path = `content/${sectionKey}/documents/${Date.now()}-${name}`;
+  const storageRef = ref(storage, path);
+  const task = uploadBytesResumable(storageRef, file, {
+    contentType: file.type || "application/octet-stream",
+    contentDisposition: `attachment; filename="${name}"`,
+  });
+  return new Promise((resolve, reject) => {
+    task.on(
+      "state_changed",
+      (snap) => onProgress?.(snap.bytesTransferred, snap.totalBytes),
+      reject,
+      async () => {
+        try {
+          const url = await getDownloadURL(storageRef);
+          resolve({ url, path, name: file.name, size: file.size, type: file.type || "" });
+        } catch (err) {
+          reject(err);
+        }
+      }
+    );
+  });
+}
 
 const EMPTY_FORM = {
   title: "", summary: "", body: "", tag: "", author: "", date: "",
@@ -80,6 +111,11 @@ export default function AdminSectionManager() {
   const [galleryNewPreviews, setGalleryNewPreviews] = useState([]); // object URLs matching galleryNewFiles
   const [gallerySize, setGallerySize] = useState("medium");
 
+  // Downloadable documents (PDF, Word, Excel …) that visitors can download
+  const [docsExisting, setDocsExisting] = useState([]); // [{url, path, name, size, type}] already saved
+  const [docsNewFiles, setDocsNewFiles] = useState([]); // File[] not yet uploaded
+  const [uploadProgress, setUploadProgress] = useState(""); // text shown while uploading
+
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -109,6 +145,9 @@ export default function AdminSectionManager() {
     setGalleryNewFiles([]);
     setGalleryNewPreviews([]);
     setGallerySize("medium");
+    setDocsExisting([]);
+    setDocsNewFiles([]);
+    setUploadProgress("");
   }
 
   function startNew() {
@@ -138,6 +177,9 @@ export default function AdminSectionManager() {
     setGalleryNewFiles([]);
     setGalleryNewPreviews([]);
     setGallerySize("medium");
+    setDocsExisting(getItemDocuments(item));
+    setDocsNewFiles([]);
+    setUploadProgress("");
     setError("");
   }
 
@@ -168,6 +210,28 @@ export default function AdminSectionManager() {
   function removeNewGalleryPhoto(index) {
     setGalleryNewFiles((prev) => prev.filter((_, i) => i !== index));
     setGalleryNewPreviews((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  function onDocumentFilesChange(e) {
+    const files = Array.from(e.target.files || []);
+    e.target.value = "";
+    if (files.length === 0) return;
+    const tooBig = files.filter((f) => f.size > MAX_DOCUMENT_BYTES);
+    if (tooBig.length > 0) {
+      setError(`Faylkan aad buu u weyn yahay (ugu badnaan ${formatBytes(MAX_DOCUMENT_BYTES)}): ${tooBig.map((f) => f.name).join(", ")}`);
+    } else {
+      setError("");
+    }
+    const ok = files.filter((f) => f.size <= MAX_DOCUMENT_BYTES);
+    setDocsNewFiles((prev) => [...prev, ...ok]);
+  }
+
+  function removeExistingDocument(index) {
+    setDocsExisting((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  function removeNewDocument(index) {
+    setDocsNewFiles((prev) => prev.filter((_, i) => i !== index));
   }
 
   async function handleSave(e) {
@@ -229,6 +293,31 @@ export default function AdminSectionManager() {
 
       const gallery = [...galleryExisting, ...uploadedGallery];
 
+      // Upload newly-added documents one by one (shows progress for big PDFs).
+      const uploadedDocs = [];
+      for (let i = 0; i < docsNewFiles.length; i++) {
+        const file = docsNewFiles[i];
+        const uploaded = await uploadDocumentFile(file, sectionKey, (done, total) => {
+          const pct = total ? Math.round((done / total) * 100) : 0;
+          setUploadProgress(`Dokumentiga ${i + 1}/${docsNewFiles.length} ayaa la soo gelinayaa… ${pct}%`);
+        });
+        uploadedDocs.push(uploaded);
+      }
+      setUploadProgress("");
+
+      // Delete any existing documents the admin removed from this item.
+      if (editingId !== "new") {
+        const old = items.find((i) => i.id === editingId);
+        const keptDocPaths = new Set(docsExisting.map((d) => d.path));
+        getItemDocuments(old).forEach((d) => {
+          if (d.path && !keptDocPaths.has(d.path)) {
+            deleteObject(ref(storage, d.path)).catch(() => {});
+          }
+        });
+      }
+
+      const documents = [...docsExisting, ...uploadedDocs];
+
       const payload = {
         ...form,
         order: Number(form.order) || 0,
@@ -236,6 +325,7 @@ export default function AdminSectionManager() {
         imageUrl,
         imagePath,
         gallery,
+        documents,
       };
 
       if (editingId === "new") {
@@ -253,6 +343,7 @@ export default function AdminSectionManager() {
     } catch (err) {
       console.error(err);
       setError("Wax baa qaldamay markii la keydinayay. Isku day mar kale.");
+      setUploadProgress("");
     } finally {
       setSaving(false);
     }
@@ -270,6 +361,9 @@ export default function AdminSectionManager() {
           if (g.path) deleteObject(ref(storage, g.path)).catch(() => {});
         });
       }
+      getItemDocuments(item).forEach((d) => {
+        if (d.path) deleteObject(ref(storage, d.path)).catch(() => {});
+      });
       await loadItems();
     } catch (err) {
       console.error(err);
@@ -370,6 +464,39 @@ export default function AdminSectionManager() {
             </div>
           )}
 
+          {/* DOWNLOADABLE DOCUMENTS */}
+          <label>Dokumenti la soo dejin karo (PDF, Word, Excel, PowerPoint …) — booqde kastaa wuu soo dejin karaa
+            <input type="file" accept={DOCUMENT_ACCEPT} multiple onChange={onDocumentFilesChange} />
+          </label>
+          <p className="adminHint">
+            Dokumenti kasta oo halkan aad ku darto wuxuu bogga ka muuqanayaa isagoo leh badhanka "Download PDF".
+            Ugu badnaan {formatBytes(MAX_DOCUMENT_BYTES)} fayl kasta.
+          </p>
+          {(docsExisting.length > 0 || docsNewFiles.length > 0) && (
+            <ul className="adminDocList">
+              {docsExisting.map((d, i) => (
+                <li className="adminDocItem" key={`doc-existing-${d.path || i}`}>
+                  <span className="adminDocItemName">
+                    <span className="docExtBadge">{getDocumentLabel(d.name)}</span>
+                    <a href={d.url} target="_blank" rel="noopener noreferrer">{d.name}</a>
+                    {d.size ? <span className="adminDocItemSize">{formatBytes(d.size)}</span> : null}
+                  </span>
+                  <button type="button" className="link adminDeleteBtn" onClick={() => removeExistingDocument(i)}>Ka saar</button>
+                </li>
+              ))}
+              {docsNewFiles.map((f, i) => (
+                <li className="adminDocItem isNew" key={`doc-new-${i}-${f.name}`}>
+                  <span className="adminDocItemName">
+                    <span className="docExtBadge">{getDocumentLabel(f.name)}</span>
+                    {f.name}
+                    <span className="adminDocItemSize">{formatBytes(f.size)} · cusub</span>
+                  </span>
+                  <button type="button" className="link adminDeleteBtn" onClick={() => removeNewDocument(i)}>Ka saar</button>
+                </li>
+              ))}
+            </ul>
+          )}
+
           <div className="adminFormRow">
             <label className="checkboxLabel">
               <input type="checkbox" checked={form.published} onChange={(e) => setForm({ ...form, published: e.target.checked })} />
@@ -384,6 +511,7 @@ export default function AdminSectionManager() {
             </label>
           </div>
 
+          {uploadProgress && <p className="adminDocProgress">{uploadProgress}</p>}
           {error && <p className="adminError">{error}</p>}
 
           <div className="adminFormActions">
@@ -405,12 +533,13 @@ export default function AdminSectionManager() {
       ) : (
         <table className="adminTable">
           <thead>
-            <tr><th>Title</th><th>Published</th><th>Featured</th><th>Order</th><th></th></tr>
+            <tr><th>Title</th><th>Dokumenti</th><th>Published</th><th>Featured</th><th>Order</th><th></th></tr>
           </thead>
           <tbody>
             {items.map((item) => (
               <tr key={item.id}>
                 <td>{item.title}</td>
+                <td>{getItemDocuments(item).length > 0 ? `📄 ${getItemDocuments(item).length}` : "—"}</td>
                 <td>{item.published !== false ? "✅" : "—"}</td>
                 <td>{item.featuredHome ? "⭐" : "—"}</td>
                 <td>{item.order || 0}</td>

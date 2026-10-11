@@ -7,6 +7,7 @@ import { SECTION_META, DEFAULT_SECTION_META } from "../config/sectionMeta";
 import { TextReveal, ImageReveal, BlobBg } from "../components/Motion";
 import Loader from "../components/Loader";
 import Reveal from "../components/Reveal";
+import DocumentDownloads from "../components/DocumentDownloads";
 import { IconHome, IconChevronRight } from "../components/Icons";
 import NotFound from "./NotFound";
 
@@ -71,6 +72,9 @@ export default function ArticlePage() {
               <b>{item.author}</b>{item.date ? ` — ${item.date}` : ""}
             </Reveal>
           )}
+          <Reveal delay={0.08}>
+            <DocumentDownloads item={item} variant="full" />
+          </Reveal>
           <Reveal delay={0.1} className="articleText">
             {(item.body || "").split("\n").map((para, i) => para.trim() ? <p key={i}>{para}</p> : <br key={i} />)}
           </Reveal>

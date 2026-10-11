@@ -4,6 +4,7 @@ import { useNavigation } from "../contexts/NavigationContext";
 import { SECTION_META, DEFAULT_SECTION_META } from "../config/sectionMeta";
 import { fetchSectionContent } from "../utils/content";
 import ContentCard from "../components/ContentCard";
+import DocumentDownloads from "../components/DocumentDownloads";
 import Loader from "../components/Loader";
 import TeamSection from "../components/TeamSection";
 import Reveal, { RevealGroup, RevealItem } from "../components/Reveal";
@@ -115,6 +116,7 @@ export default function SectionPage() {
                 </p>
               )}
               {items[0].summary && <p className="lead">{items[0].summary}</p>}
+              <DocumentDownloads item={items[0]} variant="full" />
               <div className="articleText">
                 {(items[0].body || "").split("\n").map((para, i) =>
                   para.trim() ? <p key={i}>{para}</p> : <br key={i} />
