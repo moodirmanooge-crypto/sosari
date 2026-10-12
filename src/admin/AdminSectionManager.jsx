@@ -89,6 +89,27 @@ function resizeImageFile(file, maxDim, quality) {
   });
 }
 
+// Turns a Firebase error into a clear message that says WHICH step failed
+// and WHY, so the problem can be fixed instead of guessed.
+function explainSaveError(step, err) {
+  const code = err?.code || "";
+  let why = err?.message || String(err);
+  if (code === "storage/unauthorized") {
+    why = "Firebase Storage Rules ma oggola upload-kan. Hubi Storage -> Rules (eeg storage.rules).";
+  } else if (code === "storage/unauthenticated") {
+    why = "Login-kaagu wuu dhacay. Log out samee oo dib u gal.";
+  } else if (code === "storage/quota-exceeded") {
+    why = "Storage-ka Firebase wuu buuxsamay (quota).";
+  } else if (code === "storage/retry-limit-exceeded" || code === "storage/canceled") {
+    why = "Internet-ka ayaa go'ay inta faylka la soo gelinayay. Isku day mar kale.";
+  } else if (code === "permission-denied") {
+    why = "Firestore Rules ma oggola keydintan. Hubi Firestore -> Rules.";
+  } else if (code === "invalid-argument") {
+    why = "Xogta la keydinayo ayaa qaldan ama aad u weyn: " + (err?.message || "");
+  }
+  return `Keydintu way fashilantay — tallaabada: ${step}. Sababta: ${why}${code ? ` [${code}]` : ""}`;
+}
+
 export default function AdminSectionManager() {
   const { sectionIndex: SECTION_INDEX } = useNavigation();
   const { parent, child } = useParams();
@@ -242,11 +263,17 @@ export default function AdminSectionManager() {
     }
     setSaving(true);
     setError("");
+    // Which step is running — shown in the error message if something fails.
+    let step = "diyaarinta";
+    // Old files are only deleted AFTER the database save succeeds, so a
+    // failed save never leaves the site pointing at deleted photos/files.
+    const pathsToDelete = [];
     try {
       let imageUrl = editingId !== "new" ? (items.find((i) => i.id === editingId)?.imageUrl || "") : "";
       let imagePath = editingId !== "new" ? (items.find((i) => i.id === editingId)?.imagePath || "") : "";
 
       if (imageFile) {
+        step = "upload-ka sawirka hore (cover image)";
         const preset = IMAGE_SIZE_PRESETS[imageSize] || IMAGE_SIZE_PRESETS.medium;
         const resized = await resizeImageFile(imageFile, preset.maxDim, preset.quality);
         const path = `content/${sectionKey}/${Date.now()}-${resized.name}`;
@@ -257,7 +284,7 @@ export default function AdminSectionManager() {
         if (editingId !== "new") {
           const old = items.find((i) => i.id === editingId);
           if (old?.imagePath && old.imagePath !== path) {
-            deleteObject(ref(storage, old.imagePath)).catch(() => {});
+            pathsToDelete.push(old.imagePath);
           }
         }
         imagePath = path;
@@ -266,6 +293,7 @@ export default function AdminSectionManager() {
       // Upload any newly-added gallery photos (resized first).
       let uploadedGallery = [];
       if (galleryNewFiles.length > 0) {
+        step = "upload-ka sawirrada dheeriga ah (gallery)";
         const preset = IMAGE_SIZE_PRESETS[gallerySize] || IMAGE_SIZE_PRESETS.medium;
         uploadedGallery = await Promise.all(
           galleryNewFiles.map(async (file, idx) => {
@@ -286,7 +314,7 @@ export default function AdminSectionManager() {
         const keptPaths = new Set(galleryExisting.map((g) => g.path));
         oldGallery.forEach((g) => {
           if (g.path && !keptPaths.has(g.path)) {
-            deleteObject(ref(storage, g.path)).catch(() => {});
+            pathsToDelete.push(g.path);
           }
         });
       }
@@ -297,6 +325,7 @@ export default function AdminSectionManager() {
       const uploadedDocs = [];
       for (let i = 0; i < docsNewFiles.length; i++) {
         const file = docsNewFiles[i];
+        step = `upload-ka dokumentiga "${file.name}"`;
         const uploaded = await uploadDocumentFile(file, sectionKey, (done, total) => {
           const pct = total ? Math.round((done / total) * 100) : 0;
           setUploadProgress(`Dokumentiga ${i + 1}/${docsNewFiles.length} ayaa la soo gelinayaa… ${pct}%`);
@@ -311,7 +340,7 @@ export default function AdminSectionManager() {
         const keptDocPaths = new Set(docsExisting.map((d) => d.path));
         getItemDocuments(old).forEach((d) => {
           if (d.path && !keptDocPaths.has(d.path)) {
-            deleteObject(ref(storage, d.path)).catch(() => {});
+            pathsToDelete.push(d.path);
           }
         });
       }
@@ -328,6 +357,7 @@ export default function AdminSectionManager() {
         documents,
       };
 
+      step = "keydinta Firestore (database)";
       if (editingId === "new") {
         await addDoc(collection(db, "content"), {
           ...payload,
@@ -337,12 +367,13 @@ export default function AdminSectionManager() {
       } else {
         await updateDoc(doc(db, "content", editingId), payload);
       }
+      pathsToDelete.forEach((path) => deleteObject(ref(storage, path)).catch(() => {}));
 
       await loadItems();
       cancelEdit();
     } catch (err) {
       console.error(err);
-      setError("Wax baa qaldamay markii la keydinayay. Isku day mar kale.");
+      setError(explainSaveError(step, err));
       setUploadProgress("");
     } finally {
       setSaving(false);

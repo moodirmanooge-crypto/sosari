@@ -152,6 +152,18 @@ export default function Home() {
   const heroPhotosRef = useRef(heroPhotos);
   heroPhotosRef.current = heroPhotos;
 
+  // If a hero photo can't be loaded (e.g. the file was deleted from
+  // Storage), drop it instead of showing a broken image. If none are left,
+  // fall back to the site's built-in photos.
+  function handleHeroPhotoError(badSrc) {
+    try { localStorage.removeItem(HERO_CACHE_KEY); } catch { /* ignore */ }
+    setHeroPhotos((prev) => {
+      const remaining = prev.filter((src) => src !== badSrc);
+      return remaining.length > 0 ? remaining : DEFAULT_HERO_PHOTOS;
+    });
+    setHeroSlide(0);
+  }
+
   useEffect(() => {
     // Download the remaining slides in the background so each one is ready
     // the moment the slider reaches it.
@@ -264,6 +276,7 @@ export default function Home() {
                     loading="eager"
                     decoding="async"
                     fetchPriority={heroSlide === 0 ? "high" : "auto"}
+                    onError={() => handleHeroPhotoError(heroPhotos[heroSlide])}
                     custom={1}
                     initial={{ x: 60, opacity: 0 }}
                     animate={{ x: 0, opacity: 1 }}

@@ -121,6 +121,7 @@ export default function AdminTeam() {
       let photoUrl = editingId !== "new" ? (items.find((i) => i.id === editingId)?.photoUrl || "") : "";
       let photoPath = editingId !== "new" ? (items.find((i) => i.id === editingId)?.photoPath || "") : "";
 
+      let oldPhotoToDelete = "";
       if (photoFile) {
         const resized = await resizeImageFile(photoFile);
         const path = `content/team/${Date.now()}-${resized.name}`;
@@ -130,7 +131,7 @@ export default function AdminTeam() {
         if (editingId !== "new") {
           const old = items.find((i) => i.id === editingId);
           if (old?.photoPath && old.photoPath !== path) {
-            deleteObject(ref(storage, old.photoPath)).catch(() => {});
+            oldPhotoToDelete = old.photoPath; // deleted after the save succeeds
           }
         }
         photoPath = path;
@@ -146,6 +147,9 @@ export default function AdminTeam() {
         });
       } else {
         await updateDoc(doc(db, "teamMembers", editingId), payload);
+      }
+      if (oldPhotoToDelete) {
+        deleteObject(ref(storage, oldPhotoToDelete)).catch(() => {});
       }
       cancelEdit();
     } catch (err) {

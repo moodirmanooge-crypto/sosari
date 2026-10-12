@@ -1,212 +1,255 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { doc, getDoc, setDoc } from "firebase/firestore";
-import { db } from "../firebase";
-import { useAdminAuth } from "../contexts/AdminAuthContext";
+import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
+import { db, storage } from "../firebase";
+import heroPhoto from "../assets/hero-photo.jpg";
+import heroPhoto1 from "../assets/hero-photo1.jpg";
+import heroPhoto2 from "../assets/hero-photo2.jpg";
 
-// Friendly Somali messages for the Firebase Auth error codes most likely
-// to come up here.
-function friendlyError(err) {
-  const code = err?.code || "";
-  if (code === "auth/wrong-password" || code === "auth/invalid-credential") {
-    return "Password-ka hadda jira waa qalad. Fadlan isku day mar kale.";
-  }
-  if (code === "auth/too-many-requests") {
-    return "Isku day badan ayaa la sameeyay. Fadlan mar dambe isku day.";
-  }
-  if (code === "auth/weak-password") {
-    return "Password-ka cusub waa khafiif — ugu yaraan 6 xaraf isticmaal.";
-  }
-  if (code === "auth/email-already-in-use") {
-    return "Email-kan horey ayaa loo isticmaalay.";
-  }
-  if (code === "auth/invalid-email") {
-    return "Email-ka qaabkiisu ma saxna.";
-  }
-  if (code === "auth/requires-recent-login") {
-    return "Fadlan mar kale geli password-kaaga hadda jira, kadibna isku day mar kale.";
-  }
-  return err?.message || "Wax baa qaldamay. Fadlan isku day mar kale.";
+// Shown in the admin list whenever no custom hero photos have been saved
+// yet, so the admin can actually see (and remove/replace) what's live on
+// the homepage right now, instead of an empty box.
+const BUILT_IN_HERO_PHOTOS = [
+  { url: heroPhoto, path: null },
+  { url: heroPhoto1, path: null },
+  { url: heroPhoto2, path: null },
+];
+
+const DEFAULTS = {
+  heroEyebrow: "Evidence • Data • Policy • Impact",
+  heroTitle: "Better evidence for better decisions in Somalia.",
+  heroText:
+    "SOSARI is an independent Somali-led institution for research, statistics, data, policy advisory and evaluation—connecting rigorous evidence with practical decisions across Somalia and the Horn of Africa.",
+  heroPhotos: [], // [] = use the site's default built-in photos
+};
+
+// Same size presets as the section content editor, so hero photos get
+// resized/compressed the same predictable way before upload.
+const IMAGE_SIZE_PRESETS = {
+  large: { label: "Weyn (1920px)", maxDim: 1920, quality: 0.85 },
+  medium: { label: "Dhexdhexaad (1200px) — la talinayo", maxDim: 1200, quality: 0.82 },
+  small: { label: "Yar (800px)", maxDim: 800, quality: 0.78 },
+};
+
+function resizeImageFile(file, maxDim, quality) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      let { width, height } = img;
+      if (width > maxDim || height > maxDim) {
+        if (width >= height) {
+          height = Math.round((height * maxDim) / width);
+          width = maxDim;
+        } else {
+          width = Math.round((width * maxDim) / height);
+          height = maxDim;
+        }
+      }
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0, width, height);
+      URL.revokeObjectURL(url);
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) { reject(new Error("Resize failed")); return; }
+          resolve(new File([blob], file.name.replace(/\.\w+$/, ".jpg"), { type: "image/jpeg" }));
+        },
+        "image/jpeg",
+        quality
+      );
+    };
+    img.onerror = reject;
+    img.src = url;
+  });
 }
 
-export default function AdminSettings() {
-  const { user, logout, changeAdminCredentials } = useAdminAuth();
-  const navigate = useNavigate();
-
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [newEmail, setNewEmail] = useState(user?.email || "");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+export default function AdminHomeSettings() {
+  const [form, setForm] = useState(DEFAULTS);
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
 
-  const [notifEnabled, setNotifEnabled] = useState(false);
-  const [notifBusy, setNotifBusy] = useState(false);
-  const [notifMsg, setNotifMsg] = useState("");
+  // Hero photos: existing (already saved, {url, path}) + newly picked
+  // files waiting to be uploaded on Save, plus removal tracking.
+  const [heroExisting, setHeroExisting] = useState(BUILT_IN_HERO_PHOTOS);
+  const [usingDefaults, setUsingDefaults] = useState(true);
+  const [heroNewFiles, setHeroNewFiles] = useState([]);
+  const [heroNewPreviews, setHeroNewPreviews] = useState([]);
+  const [heroSize, setHeroSize] = useState("medium");
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
-    getDoc(doc(db, "sosariAdmin", "admin"))
-      .then((snap) => setNotifEnabled(!!snap.data()?.notificationsEnabled))
-      .catch(() => {});
+    getDoc(doc(db, "siteSettings", "home")).then((snap) => {
+      if (snap.exists()) {
+        const data = snap.data();
+        setForm({ ...DEFAULTS, ...data });
+        if (Array.isArray(data.heroPhotos) && data.heroPhotos.length > 0) {
+          setHeroExisting(data.heroPhotos);
+          setUsingDefaults(false);
+        }
+        // else: leave the built-in photos showing (usingDefaults stays true)
+      }
+      setLoading(false);
+    });
   }, []);
 
-  async function toggleNotifications() {
-    setNotifMsg("");
-    if (!notifEnabled) {
-      if (typeof Notification === "undefined") {
-        setNotifMsg("Browser-kan ma taageerayo notifications.");
-        return;
-      }
-      setNotifBusy(true);
-      const permission = await Notification.requestPermission();
-      setNotifBusy(false);
-      if (permission !== "granted") {
-        setNotifMsg("Waa in aad ogolaatid ogolaanshaha browser-ka (notifications) si tan loo shido.");
-        return;
-      }
-    }
-    const next = !notifEnabled;
-    setNotifEnabled(next);
-    await setDoc(doc(db, "sosariAdmin", "admin"), { notificationsEnabled: next }, { merge: true });
-    setNotifMsg(next ? "Notifications waa la shiday." : "Notifications waa la damiyay.");
+  function onHeroFilesChange(e) {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    setUsingDefaults(false);
+    setHeroNewFiles((prev) => [...prev, ...files]);
+    setHeroNewPreviews((prev) => [...prev, ...files.map((f) => URL.createObjectURL(f))]);
+    e.target.value = "";
   }
 
-  async function handleSubmit(e) {
+  function removeExistingHeroPhoto(index) {
+    setUsingDefaults(false);
+    setHeroExisting((prev) => prev.filter((_, i) => i !== index));
+  }
+  function removeNewHeroPhoto(index) {
+    setHeroNewFiles((prev) => prev.filter((_, i) => i !== index));
+    setHeroNewPreviews((prev) => prev.filter((_, i) => i !== index));
+  }
+  function moveExistingHeroPhoto(index, dir) {
+    setUsingDefaults(false);
+    setHeroExisting((prev) => {
+      const arr = prev.slice();
+      const target = index + dir;
+      if (target < 0 || target >= arr.length) return prev;
+      [arr[index], arr[target]] = [arr[target], arr[index]];
+      return arr;
+    });
+  }
+
+  async function handleSave(e) {
     e.preventDefault();
-    setError("");
-    setSuccess("");
-
-    const emailChanged = newEmail.trim() && newEmail.trim() !== (user?.email || "");
-    const passwordChanged = newPassword.trim().length > 0;
-
-    if (!currentPassword) {
-      setError("Fadlan geli password-kaaga hadda jira si loo xaqiijiyo.");
-      return;
-    }
-    if (!emailChanged && !passwordChanged) {
-      setError("Wax isbeddel ah ma jiraan — geli email cusub ama password cusub.");
-      return;
-    }
-    if (passwordChanged && newPassword !== confirmPassword) {
-      setError("Labada password ee cusub isku mid ma aha.");
-      return;
-    }
-    if (passwordChanged && newPassword.length < 6) {
-      setError("Password-ka cusub waa inuu ugu yaraan 6 xaraf yahay.");
-      return;
-    }
-
     setSaving(true);
+    setSaved(false);
+    setError("");
     try {
-      // Login-ka admin-ku wuxuu ku shaqeeyaa Firestore (sosariAdmin/admin),
-      // ee ma aha Firebase Auth. Password-ka hadda jira waa la hubinayaa,
-      // kadibna email/username iyo password-ka si toos ah ayaa Firestore
-      // loogu badalayaa.
-      await changeAdminCredentials({
-        currentPassword,
-        newEmail: emailChanged ? newEmail.trim() : "",
-        newPassword: passwordChanged ? newPassword : "",
-      });
-
-      if (passwordChanged) {
-        setSuccess("Password-ka waa la beddelay. Fadlan mar kale soo gal adigoo isticmaalaya password-ka cusub…");
-        setTimeout(async () => {
-          await logout();
-          navigate("/admin/login");
-        }, 1800);
-      } else if (emailChanged) {
-        setSuccess(
-          `Email-ka waa la beddelay. Hadda waxaad ku soo geli doontaa "${newEmail.trim()}".`
+      let uploadedHero = [];
+      if (heroNewFiles.length > 0) {
+        setUploading(true);
+        const preset = IMAGE_SIZE_PRESETS[heroSize] || IMAGE_SIZE_PRESETS.medium;
+        uploadedHero = await Promise.all(
+          heroNewFiles.map(async (file, idx) => {
+            const resized = await resizeImageFile(file, preset.maxDim, preset.quality);
+            const path = `content/home/hero/${Date.now()}-${idx}-${resized.name}`;
+            const storageRef = ref(storage, path);
+            await uploadBytes(storageRef, resized);
+            const url = await getDownloadURL(storageRef);
+            return { url, path };
+          })
         );
-        setCurrentPassword("");
+        setUploading(false);
       }
+
+      // Delete any previously-saved hero photos the admin removed.
+      const prevSnap = await getDoc(doc(db, "siteSettings", "home"));
+      const prevPhotos = Array.isArray(prevSnap.data()?.heroPhotos) ? prevSnap.data().heroPhotos : [];
+      const keptPaths = new Set(heroExisting.map((p) => p.path));
+      // Only collect them here — they are deleted AFTER the save succeeds,
+      // so a failed save can never leave the site pointing at deleted photos.
+      const pathsToDelete = prevPhotos
+        .filter((p) => p.path && !keptPaths.has(p.path))
+        .map((p) => p.path);
+
+      const heroPhotos = usingDefaults && heroNewFiles.length === 0
+        ? [] // no explicit override saved — keep using the site's built-in default photos
+        : [...heroExisting, ...uploadedHero];
+
+      await setDoc(doc(db, "siteSettings", "home"), { ...form, heroPhotos }, { merge: true });
+      pathsToDelete.forEach((path) => deleteObject(ref(storage, path)).catch(() => {}));
+      setHeroExisting(heroPhotos.length > 0 ? heroPhotos : BUILT_IN_HERO_PHOTOS);
+      setUsingDefaults(heroPhotos.length === 0);
+      setHeroNewFiles([]);
+      setHeroNewPreviews([]);
+      setSaved(true);
     } catch (err) {
       console.error(err);
-      setError(friendlyError(err));
+      setError("Keydintu way fashilantay. Isku day mar kale.");
     } finally {
       setSaving(false);
+      setUploading(false);
     }
   }
+
+  if (loading) return <div className="adminPage"><p>Loading…</p></div>;
 
   return (
     <div className="adminPage">
-      <h1>Settings</h1>
-      <p className="lead">Cusboonaysii email-kaaga ama password-kaaga. Waxaad marka hore geli doontaa password-kaaga hadda jira.</p>
-
-      <form className="adminSettingsForm" onSubmit={handleSubmit}>
-        <label>
-          Password-ka hadda jira <span className="req">*</span>
-          <input
-            type="password"
-            value={currentPassword}
-            onChange={(e) => setCurrentPassword(e.target.value)}
-            placeholder="Geli password-kaaga hadda jira"
-            autoComplete="current-password"
-            required
-          />
-        </label>
-
-        <div className="adminSettingsDivider" />
-
-        <label>
-          Email cusub
-          <input
-            type="email"
-            value={newEmail}
-            onChange={(e) => setNewEmail(e.target.value)}
-            autoComplete="email"
-          />
-        </label>
-
-        <label>
-          Password cusub
-          <input
-            type="password"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            placeholder="Ka tag maran haddii aadan bedelin"
-            autoComplete="new-password"
-          />
-        </label>
-
-        <label>
-          Xaqiiji password-ka cusub
-          <input
-            type="password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            placeholder="Ku celi password-ka cusub"
-            autoComplete="new-password"
-          />
-        </label>
-
-        {error && <div className="adminSettingsMsg adminSettingsMsgError">{error}</div>}
-        {success && <div className="adminSettingsMsg adminSettingsMsgOk">{success}</div>}
-
-        <button type="submit" className="btn primary" disabled={saving}>
-          {saving ? "Keydinaya…" : "Keydi isbeddelka"}
-        </button>
-      </form>
-
-      <div className="adminSettingsDivider" style={{ margin: "32px 0" }} />
-
-      <h2 style={{ fontSize: 16, marginBottom: 4 }}>Notifications</h2>
-      <p className="lead" style={{ marginBottom: 14 }}>
-        Marka la shido, waxaad heli doontaa ogeysiis (browser notification) isla markiiba mar
-        kasta oo qof foomka "Work With SOSARI" buuxiyo — ilaa inta aad browser-kaaga ku haysato
-        tab ka mid ah website-ka, xitaa haddii aadan ku sugnayn bogga Partner Messages.
+      <h1>Home Page Settings</h1>
+      <p className="lead">
+        Waxaad halkan ka maareysaa qoraalka ugu horreeya ee bogga Home (Hero section)
+        iyo sawirrada isbadalaya ee bogga Home ka muuqda. Content-ka "Featured on Home"
+        waxaa lagu shubaa halka qaybta content-ka ee kasta (dooro checkbox "Ku muuji bogga Home").
       </p>
-      <button
-        type="button"
-        className={`notifToggle ${notifEnabled ? "notifToggleOn" : ""}`}
-        onClick={toggleNotifications}
-        disabled={notifBusy}
-      >
-        <span className="notifToggleDot" />
-        {notifEnabled ? "Notifications: ON" : "Notifications: OFF"}
-      </button>
-      {notifMsg && <p className="adminSettingsMsg adminSettingsMsgOk" style={{ marginTop: 10 }}>{notifMsg}</p>}
+
+      {error && <p className="adminError">{error}</p>}
+
+      <form className="adminForm" onSubmit={handleSave}>
+        <label>Eyebrow (qoraal gaaban ee sare)
+          <input value={form.heroEyebrow} onChange={(e) => setForm({ ...form, heroEyebrow: e.target.value })} />
+        </label>
+        <label>Hero Title
+          <textarea rows={2} value={form.heroTitle} onChange={(e) => setForm({ ...form, heroTitle: e.target.value })} />
+        </label>
+        <label>Hero Text
+          <textarea rows={4} value={form.heroText} onChange={(e) => setForm({ ...form, heroText: e.target.value })} />
+        </label>
+
+        <div className="adminFormDivider" />
+
+        <h3 style={{ margin: "4px 0 0" }}>Sawirrada Hero-ga (isbadalaya)</h3>
+        <p className="lead" style={{ margin: "2px 0 10px" }}>
+          Kuwan waa sawirrada saddexda ah ee bogga Home ku wareega. Waxaad ku dari kartaa
+          dhowr sawir hal mar, mid ka saari kartaa, ama isku dari kartaa kuwa hore iyo kuwa cusub.
+          Haddii aadan wax sawir ah gelin, bogga wuxuu isticmaali doonaa saddexda sawir ee asalka ah.
+        </p>
+
+        <label>Ku dar sawir(ro) cusub (waxaad dooran kartaa dhowr mar hal mar)
+          <input type="file" accept="image/*" multiple onChange={onHeroFilesChange} />
+        </label>
+        <label>Cabbirka sawirrada (Image size)
+          <select value={heroSize} onChange={(e) => setHeroSize(e.target.value)}>
+            {Object.entries(IMAGE_SIZE_PRESETS).map(([key, p]) => (
+              <option key={key} value={key}>{p.label}</option>
+            ))}
+          </select>
+        </label>
+
+        {(heroExisting.length > 0 || heroNewPreviews.length > 0) && (
+          <div className="adminGalleryGrid">
+            {heroExisting.map((p, i) => (
+              <div className="adminGalleryThumb" key={`existing-${p.path || i}`}>
+                <img src={p.url} alt="" />
+                <div className="adminGalleryThumbControls">
+                  <button type="button" onClick={() => moveExistingHeroPhoto(i, -1)} disabled={i === 0}>↑</button>
+                  <button type="button" onClick={() => moveExistingHeroPhoto(i, 1)} disabled={i === heroExisting.length - 1}>↓</button>
+                </div>
+                <button type="button" className="adminGalleryRemove" onClick={() => removeExistingHeroPhoto(i)}>✕</button>
+              </div>
+            ))}
+            {heroNewPreviews.map((src, i) => (
+              <div className="adminGalleryThumb adminGalleryThumbNew" key={`new-${i}`}>
+                <img src={src} alt="" />
+                <button type="button" className="adminGalleryRemove" onClick={() => removeNewHeroPhoto(i)}>✕</button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="adminFormActions">
+          <button className="btn primary" type="submit" disabled={saving}>
+            {uploading ? "Sawirrada waa la soo shubayaa…" : saving ? "Keydinaya…" : "Keydi"}
+          </button>
+          {saved && <span style={{ color: "green", marginLeft: 10 }}>✅ La keydiyay</span>}
+        </div>
+      </form>
     </div>
   );
 }

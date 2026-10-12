@@ -9,7 +9,7 @@ const ADMIN_SESSION_KEY = "sosari_admin_session";
 export function AdminAuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [adminProfile, setAdminProfile] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading] = useState(false); // nothing to restore — no saved session
 
   // Firestore is the source of truth for this admin login.
   // Document: sosariAdmin/admin
@@ -18,51 +18,14 @@ export function AdminAuthProvider({ children }) {
   // password: "123456"
   // email: "admin@sosari.com"
   // role: "superadmin"
+  // The admin session is kept ONLY in memory (never saved in the browser).
+  // So every time /admin is opened — a new tab, a new window, typing the
+  // URL again, or a page refresh — the admin must log in with the password.
+  // Moving between admin pages inside the panel stays logged in.
   useEffect(() => {
-    async function restoreSession() {
-      try {
-        const saved = localStorage.getItem(ADMIN_SESSION_KEY);
-
-        if (!saved) {
-          setUser(null);
-          setAdminProfile(null);
-          setLoading(false);
-          return;
-        }
-
-        const ref = doc(db, "sosariAdmin", "admin");
-        const snap = await getDoc(ref);
-
-        if (!snap.exists()) {
-          localStorage.removeItem(ADMIN_SESSION_KEY);
-          setUser(null);
-          setAdminProfile(null);
-          setLoading(false);
-          return;
-        }
-
-        const data = snap.data();
-
-        setUser({
-          uid: "firestore-admin",
-          email: data.email || data.username || "",
-        });
-
-        setAdminProfile({
-          username: data.username || data.email || "",
-          role: data.role || "admin",
-        });
-      } catch (error) {
-        console.error("Admin session restore error:", error);
-        localStorage.removeItem(ADMIN_SESSION_KEY);
-        setUser(null);
-        setAdminProfile(null);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    restoreSession();
+    // Remove any old saved session left by the previous version of the site.
+    try { localStorage.removeItem(ADMIN_SESSION_KEY); } catch { /* ignore */ }
+    try { sessionStorage.removeItem(ADMIN_SESSION_KEY); } catch { /* ignore */ }
   }, []);
 
   async function loginWithUsername(username, password) {
@@ -100,8 +63,6 @@ export function AdminAuthProvider({ children }) {
       role: data.role || "admin",
       loggedInAt: Date.now(),
     };
-
-    localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(session));
 
     setUser({
       uid: session.uid,
@@ -165,16 +126,6 @@ export function AdminAuthProvider({ children }) {
     const username = updates.username || data.username || email;
     const role = data.role || "admin";
 
-    try {
-      const saved = JSON.parse(localStorage.getItem(ADMIN_SESSION_KEY) || "{}");
-      localStorage.setItem(
-        ADMIN_SESSION_KEY,
-        JSON.stringify({ ...saved, uid: "firestore-admin", email, username, role })
-      );
-    } catch {
-      /* ignore */
-    }
-
     setUser({ uid: "firestore-admin", email });
     setAdminProfile({ username, role });
 
@@ -182,7 +133,6 @@ export function AdminAuthProvider({ children }) {
   }
 
   async function logout() {
-    localStorage.removeItem(ADMIN_SESSION_KEY);
     setUser(null);
     setAdminProfile(null);
   }
