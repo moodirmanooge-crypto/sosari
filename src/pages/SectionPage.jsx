@@ -116,7 +116,6 @@ export default function SectionPage() {
                 </p>
               )}
               {items[0].summary && <p className="lead">{items[0].summary}</p>}
-              <DocumentDownloads item={items[0]} variant="full" />
               <div className="articleText">
                 {(items[0].body || "").split("\n").map((para, i) =>
                   para.trim() ? <p key={i}>{para}</p> : <br key={i} />
@@ -131,6 +130,8 @@ export default function SectionPage() {
                   ))}
                 </div>
               )}
+              {/* Only shown when the admin attached a PDF/document */}
+              <DocumentDownloads item={items[0]} variant="full" />
             </Reveal>
           ) : sectionKey === "about/partners-networks" ? (
             <div className="partnersNetworksGroups">

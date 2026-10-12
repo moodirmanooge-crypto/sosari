@@ -1,10 +1,7 @@
 import { Link } from "react-router-dom";
 import { ImageReveal } from "./Motion";
 import { IconArrow } from "./Icons";
-import DocumentDownloads from "./DocumentDownloads";
 
-// The card is a <div> (not one big <Link>) so the "Download PDF" button can
-// sit inside it — a link can't legally contain another link.
 export default function ContentCard({ item }) {
   return (
     <div className="pub contentCard">
@@ -18,7 +15,6 @@ export default function ContentCard({ item }) {
         {item.summary && <p>{item.summary}</p>}
         <span className="cardReadMore">Read More <IconArrow /></span>
       </Link>
-      <DocumentDownloads item={item} />
     </div>
   );
 }

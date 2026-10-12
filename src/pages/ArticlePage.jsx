@@ -72,12 +72,11 @@ export default function ArticlePage() {
               <b>{item.author}</b>{item.date ? ` — ${item.date}` : ""}
             </Reveal>
           )}
-          <Reveal delay={0.08}>
-            <DocumentDownloads item={item} variant="full" />
-          </Reveal>
           <Reveal delay={0.1} className="articleText">
             {(item.body || "").split("\n").map((para, i) => para.trim() ? <p key={i}>{para}</p> : <br key={i} />)}
           </Reveal>
+          {/* Only shown when the admin attached a PDF/document to this item */}
+          <DocumentDownloads item={item} variant="full" />
         </div>
       </section>
 

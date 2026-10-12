@@ -496,11 +496,12 @@ export default function AdminSectionManager() {
           )}
 
           {/* DOWNLOADABLE DOCUMENTS */}
-          <label>Dokumenti la soo dejin karo (PDF, Word, Excel, PowerPoint …) — booqde kastaa wuu soo dejin karaa
+          <label>Dokumenti la soo dejin karo — PDF, Word … (ikhtiyaari / optional)
             <input type="file" accept={DOCUMENT_ACCEPT} multiple onChange={onDocumentFilesChange} />
           </label>
           <p className="adminHint">
-            Dokumenti kasta oo halkan aad ku darto wuxuu bogga ka muuqanayaa isagoo leh badhanka "Download PDF".
+            Haddii aad PDF ku darto, badhanka "Download PDF" wuxuu ka muuqanayaa bogga maqaalka hoostiisa
+            (marka "Read More" la furo). Haddii aad ka tagto, badhan download ah ma jiro.
             Ugu badnaan {formatBytes(MAX_DOCUMENT_BYTES)} fayl kasta.
           </p>
           {(docsExisting.length > 0 || docsNewFiles.length > 0) && (
